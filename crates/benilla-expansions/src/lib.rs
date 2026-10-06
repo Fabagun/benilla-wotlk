@@ -1,0 +1,272 @@
+//! The client generations benilla targets and the structural facts of each reference client. One
+//! [`Expansion`] is selected per process ([`Expansion::active`]); the crates that own a behaviour
+//! read the facts they need from its [`ExpansionProfile`] and implement the behaviour themselves.
+
+use std::fmt;
+use std::sync::OnceLock;
+
+/// A supported reference client.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Expansion {
+    /// World of Warcraft 1.12.1 (5875).
+    Classic,
+    /// World of Warcraft 3.3.5a (12340).
+    Wotlk,
+}
+
+/// The variable that selects the target; unset is [`Expansion::Classic`].
+pub const EXPANSION_ENV: &str = "WOW_EXPANSION";
+
+/// A [`EXPANSION_ENV`] value that names no supported target.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnknownExpansion(pub String);
+
+impl fmt::Display for UnknownExpansion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "${EXPANSION_ENV}={:?} names no supported client; expected \"classic\" or \"wotlk\"",
+            self.0
+        )
+    }
+}
+
+impl std::error::Error for UnknownExpansion {}
+
+impl Expansion {
+    pub const ALL: [Expansion; 2] = [Expansion::Classic, Expansion::Wotlk];
+
+    /// The target an [`EXPANSION_ENV`] value names, any case; unset or empty is Classic.
+    pub fn from_env_value(value: Option<&str>) -> Result<Self, UnknownExpansion> {
+        match value.map(str::trim) {
+            None | Some("") => Ok(Expansion::Classic),
+            Some(v) if v.eq_ignore_ascii_case("classic") => Ok(Expansion::Classic),
+            Some(v) if v.eq_ignore_ascii_case("wotlk") => Ok(Expansion::Wotlk),
+            Some(v) => Err(UnknownExpansion(v.to_string())),
+        }
+    }
+
+    /// The process's target, read from [`EXPANSION_ENV`] on first use and fixed from then on, so
+    /// every subsystem sees the same one. Panics on a value naming no supported client.
+    pub fn active() -> Expansion {
+        static ACTIVE: OnceLock<Expansion> = OnceLock::new();
+        *ACTIVE.get_or_init(|| {
+            let value = std::env::var(EXPANSION_ENV).ok();
+            Expansion::from_env_value(value.as_deref()).unwrap_or_else(|e| panic!("{e}"))
+        })
+    }
+
+    pub fn profile(self) -> &'static ExpansionProfile {
+        match self {
+            Expansion::Classic => &CLASSIC,
+            Expansion::Wotlk => &WOTLK,
+        }
+    }
+}
+
+impl fmt::Display for Expansion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let p = self.profile();
+        write!(f, "{} ({})", p.version, p.build)
+    }
+}
+
+/// The facts of one reference client.
+#[derive(Debug)]
+pub struct ExpansionProfile {
+    pub expansion: Expansion,
+    pub version: &'static str,
+    pub build: u16,
+    pub archives: ArchiveLayout,
+}
+
+/// How the reference client composes its patch chain from the `Data` folder. Paths are relative to
+/// `Data`, `/`-separated, matched case-insensitively; `{locale}` is the client's locale code.
+#[derive(Debug)]
+pub struct ArchiveLayout {
+    /// The base archives, lowest priority first.
+    pub base: &'static [BaseArchive],
+    /// Patches mounted by name above the base, lowest priority first.
+    pub patches: &'static [&'static str],
+    /// Patch globs (`?` is exactly one character). Every match mounts above [`Self::patches`],
+    /// ascending by case-folded `\`-separated path.
+    pub patch_globs: &'static [&'static str],
+    /// Archives mounted above every patch, lowest priority first.
+    pub tail: &'static [&'static str],
+    /// Archives the reference mounts with a mechanism benilla does not implement: present, they
+    /// fail the chain rather than be skipped.
+    pub unsupported: &'static [&'static str],
+}
+
+/// One base archive of an [`ArchiveLayout`].
+#[derive(Debug, PartialEq, Eq)]
+pub struct BaseArchive {
+    pub path: &'static str,
+    /// The reference fails to start without it.
+    pub required: bool,
+}
+
+impl ArchiveLayout {
+    /// Whether any path names the locale, so the chain needs one.
+    pub fn uses_locale(&self) -> bool {
+        self.base
+            .iter()
+            .map(|b| b.path)
+            .chain(self.patches.iter().copied())
+            .chain(self.patch_globs.iter().copied())
+            .any(|p| p.contains(LOCALE))
+    }
+}
+
+/// The locale placeholder in an [`ArchiveLayout`] path.
+pub const LOCALE: &str = "{locale}";
+
+const fn optional(path: &'static str) -> BaseArchive {
+    BaseArchive {
+        path,
+        required: false,
+    }
+}
+
+const fn required(path: &'static str) -> BaseArchive {
+    BaseArchive {
+        path,
+        required: true,
+    }
+}
+
+/// 1.12.1: the mounter's table (`0x82e12c`), priority 0x36 (`dbc.MPQ`) to 0x3f (`model.MPQ`);
+/// `base.MPQ` is closed before mounting (`0x5aa2d0`). Then `patch.MPQ`, every `patch-?.MPQ`
+/// (glob `0x82edbc`, sorted descending with `strnicmp` and mounted walking backwards, `0x403740`),
+/// then `speech2.MPQ`. A missing base archive is skipped.
+static CLASSIC: ExpansionProfile = ExpansionProfile {
+    expansion: Expansion::Classic,
+    version: "1.12.1",
+    build: 5875,
+    archives: ArchiveLayout {
+        base: &[
+            optional("dbc.MPQ"),
+            optional("speech.MPQ"),
+            optional("fonts.MPQ"),
+            optional("interface.MPQ"),
+            optional("misc.MPQ"),
+            optional("sound.MPQ"),
+            optional("wmo.MPQ"),
+            optional("terrain.MPQ"),
+            optional("texture.MPQ"),
+            optional("model.MPQ"),
+        ],
+        patches: &["patch.MPQ"],
+        patch_globs: &["patch-?.MPQ"],
+        tail: &["speech2.MPQ"],
+        unsupported: &[],
+    },
+};
+
+/// 3.3.5a, when `Data\common.MPQ` exists (`0x402b90`; without it the client falls back to the
+/// 1.x names, which no 3.3.5a install ships). The mounter (`0x405dd0`) walks the table at
+/// `0xab6168` from priority 63 down, so the table reads highest first; this list is it reversed,
+/// the entries for that mode only. `common`, `locale-*` and `speech-*` are required ("Failed to
+/// open archive"); the rest are skipped when missing. Patches start at 64 (`0x405ab0`):
+/// `patch-<loc>.MPQ`, `patch.MPQ`, then both globs' matches by full path, sorted descending with
+/// `strnicmp` (`0x401200`) and mounted walking backwards.
+static WOTLK: ExpansionProfile = ExpansionProfile {
+    expansion: Expansion::Wotlk,
+    version: "3.3.5a",
+    build: 12340,
+    archives: ArchiveLayout {
+        base: &[
+            optional("{locale}/lichking-speech-{locale}.MPQ"),
+            optional("{locale}/expansion-speech-{locale}.MPQ"),
+            optional("{locale}/lichking-locale-{locale}.MPQ"),
+            optional("{locale}/expansion-locale-{locale}.MPQ"),
+            required("{locale}/speech-{locale}.MPQ"),
+            required("{locale}/locale-{locale}.MPQ"),
+            optional("common-2.MPQ"),
+            required("common.MPQ"),
+            optional("lichking.MPQ"),
+            optional("expansion.MPQ"),
+        ],
+        patches: &["{locale}/patch-{locale}.MPQ", "patch.MPQ"],
+        patch_globs: &["patch-?.MPQ", "{locale}/patch-{locale}-?.MPQ"],
+        tail: &[],
+        // Mounted above the patches and overlaid into each of them (`0x405f30`).
+        unsupported: &["alternate.MPQ"],
+    },
+};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unset_or_empty_selects_classic() {
+        assert_eq!(Expansion::from_env_value(None), Ok(Expansion::Classic));
+        assert_eq!(Expansion::from_env_value(Some("")), Ok(Expansion::Classic));
+        assert_eq!(
+            Expansion::from_env_value(Some("  ")),
+            Ok(Expansion::Classic)
+        );
+    }
+
+    #[test]
+    fn names_select_their_target_in_any_case() {
+        assert_eq!(
+            Expansion::from_env_value(Some("classic")),
+            Ok(Expansion::Classic)
+        );
+        assert_eq!(
+            Expansion::from_env_value(Some("WotLK")),
+            Ok(Expansion::Wotlk)
+        );
+        assert_eq!(
+            Expansion::from_env_value(Some(" wotlk ")),
+            Ok(Expansion::Wotlk)
+        );
+    }
+
+    #[test]
+    fn an_unknown_target_is_an_error_not_classic() {
+        assert_eq!(
+            Expansion::from_env_value(Some("tbc")),
+            Err(UnknownExpansion("tbc".into()))
+        );
+        assert!(Expansion::from_env_value(Some("12340")).is_err());
+    }
+
+    #[test]
+    fn each_profile_names_its_own_client() {
+        for e in Expansion::ALL {
+            assert_eq!(e.profile().expansion, e);
+        }
+        assert_eq!((CLASSIC.version, CLASSIC.build), ("1.12.1", 5875));
+        assert_eq!((WOTLK.version, WOTLK.build), ("3.3.5a", 12340));
+        assert_eq!(Expansion::Wotlk.to_string(), "3.3.5a (12340)");
+    }
+
+    #[test]
+    fn only_wotlk_has_a_locale_folder() {
+        assert!(!CLASSIC.archives.uses_locale());
+        assert!(WOTLK.archives.uses_locale());
+    }
+
+    #[test]
+    fn wotlk_requires_exactly_the_reference_s_required_archives() {
+        let required: Vec<_> = WOTLK
+            .archives
+            .base
+            .iter()
+            .filter(|b| b.required)
+            .map(|b| b.path)
+            .collect();
+        assert_eq!(
+            required,
+            [
+                "{locale}/speech-{locale}.MPQ",
+                "{locale}/locale-{locale}.MPQ",
+                "common.MPQ"
+            ]
+        );
+        assert!(CLASSIC.archives.base.iter().all(|b| !b.required));
+    }
+}

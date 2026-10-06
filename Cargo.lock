@@ -584,6 +584,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "benilla-expansions"
+version = "0.2.0"
+
+[[package]]
 name = "benilla-formats"
 version = "0.2.0"
 dependencies = [
@@ -592,6 +596,7 @@ dependencies = [
  "benilla-blp",
  "benilla-bytes",
  "benilla-dbc",
+ "benilla-expansions",
  "benilla-m2",
  "benilla-mpq",
  "benilla-wdt",

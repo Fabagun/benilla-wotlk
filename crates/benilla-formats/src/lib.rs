@@ -335,24 +335,7 @@ pub use taxi_nodes::{load_taxi_nodes, TaxiNode, TaxiNodes};
 mod taxi_path;
 pub use taxi_path::{load_taxi_paths, TaxiPath, TaxiPaths};
 
-/// The ten base archives, lowest priority first: the reference mounter's table (`0x82e12c`),
-/// priority 0x36 (`dbc.MPQ`) to 0x3f (`model.MPQ`), in [`Chain`]'s later-wins order. The patch
-/// archives and `speech2.MPQ` are found by [`Chain::open`]; `base.MPQ` is left out, as the
-/// reference closes it before mounting (`0x5aa2d0`).
-pub const VANILLA_BASE_ORDER: &[&str] = &[
-    "dbc.MPQ",
-    "speech.MPQ",
-    "fonts.MPQ",
-    "interface.MPQ",
-    "misc.MPQ",
-    "sound.MPQ",
-    "wmo.MPQ",
-    "terrain.MPQ",
-    "texture.MPQ",
-    "model.MPQ",
-];
-
-/// [`Chain::open`] on one `.MPQ` file or a vanilla `Data` directory.
+/// [`Chain::open`] on one `.MPQ` file or the active client's `Data` directory.
 pub fn open_chain(path: &Path) -> Result<Chain> {
     Chain::open(path)
 }
