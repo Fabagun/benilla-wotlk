@@ -239,6 +239,21 @@ impl AssetLoader for M2ModelLoader {
         reader.read_to_end(&mut bytes).await?;
         let to_io = |e: anyhow::Error| std::io::Error::other(format!("{e:#}"));
 
+        // A 3.3.5a model is read in the 1.12.1 layout, with its skin profile beside it.
+        if benilla_formats::md20_version(&bytes) == Some(benilla_formats::VERSION_264) {
+            let path = ctx.path().path().to_string_lossy().to_ascii_lowercase();
+            let skin = ctx
+                .read_asset_bytes(format!("mpq://{}", benilla_formats::skin_path(&path)))
+                .await
+                .map_err(|e| std::io::Error::other(format!("{path}: skin profile 0: {e}")))?;
+            let out = benilla_formats::relayout_264(&bytes, &skin)
+                .map_err(|e| std::io::Error::other(format!("{path}: {e}")))?;
+            for dropped in &out.dropped {
+                warn!("{path}: not loaded: {dropped}");
+            }
+            bytes = out.bytes;
+        }
+
         // Skins fill at the spawn site, so no skin directory or list is passed.
         let subs = parse_m2_render_submeshes(&bytes, "", &[]).map_err(to_io)?;
         let bounds = parse_m2_bounds(&bytes).ok();

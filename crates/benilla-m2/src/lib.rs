@@ -1,9 +1,11 @@
 //! An M2 (MD20) model reader for WoW 1.12.1. Vanilla models are MD20 version 256 or 257: a header
 //! of `M2Array`s (`count`, file `offset`), the arrays they name, and the embedded skin profiles.
 //! Particle emitters and lights are not read here; benilla-formats reads them from the raw bytes.
+//! A 3.3.5a model (version 264) is read after [`relayout_264`] writes it in the 1.12.1 layout.
 
 mod error;
 mod model;
+mod relayout;
 mod skin;
 mod track;
 
@@ -13,6 +15,7 @@ pub use model::{
     M2Format, M2Header, M2Material, M2Model, M2PlayableAnim, M2RawData, M2RenderFlags, M2Texture,
     M2TextureTransform, M2TextureType, M2Vertex, C2, C3,
 };
+pub use relayout::{md20_version, relayout_264, skin_path, Relayout, VERSION_264};
 pub use skin::{Skin, SkinBatch, SkinSection};
 pub use track::{
     CubicValue, M2QuatTrack, M2ScalarSplineTrack, M2ScalarTrack, M2SplineKey, M2Track,

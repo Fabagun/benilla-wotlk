@@ -33,6 +33,20 @@ pub use tex_anim::{rotation_2x2, uv_transform, UvAnim, UvRotAnim};
 pub use types::*;
 pub use wmo::*;
 
+pub use benilla_m2::{md20_version, relayout_264, skin_path, Relayout, VERSION_264};
+
+/// The M2 at `path` in the 1.12.1 layout every reader here takes: a version-264 model is written
+/// in it with its skin profile 0 ([`relayout_264`]), whose [`Relayout::dropped`] comes back beside.
+pub fn read_m2(chain: &Chain, path: &str) -> Result<(Vec<u8>, Vec<String>)> {
+    let bytes = chain.read(path)?;
+    if md20_version(&bytes) != Some(VERSION_264) {
+        return Ok((bytes, Vec::new()));
+    }
+    let skin = chain.read(&skin_path(path))?;
+    let out = relayout_264(&bytes, &skin).map_err(|e| anyhow::anyhow!("{path}: {e}"))?;
+    Ok((out.bytes, out.dropped))
+}
+
 /// Build a compact submesh from global vertex indices. Also returns each local vertex's global
 /// index, from which the M2 path fills [`RenderSubmesh::joints`].
 fn remap_submesh(
