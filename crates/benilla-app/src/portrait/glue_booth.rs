@@ -221,10 +221,15 @@ struct PendingSwap {
 const GLUE_SWAP_HOLD_SECS: f32 = 2.0;
 
 /// The scene's model-name token, `Interface\Glues\Models\UI_<token>\UI_<token>.mdx`. The race
-/// mapping is `GlueParent.lua`'s `SetBackgroundModel`; the main menu is `AccountLogin.xml`'s.
+/// mapping is `GlueParent.lua`'s `SetBackgroundModel`; the main menu is the client's own.
 fn scene_token(scene: GlueScene) -> &'static str {
     match scene {
-        GlueScene::MainMenu => "MainMenu",
+        GlueScene::MainMenu => {
+            benilla_expansions::Expansion::active()
+                .profile()
+                .glue
+                .login_scene
+        }
         GlueScene::Race(race) => match race {
             2 | 8 => "Orc",   // Troll shares Orc's scene
             3 | 7 => "Dwarf", // Gnome shares Dwarf's
@@ -328,10 +333,13 @@ fn scene_light_blob(
 }
 
 /// The per-scene fog, colour and far (near is 0): the race rows are `GlueParent.lua`'s
-/// `CharModelFogInfo`; the main menu's is `AccountLogin.xml`'s `<FogColor>` and `fogFar`.
-fn scene_fog(token: &str) -> ([f32; 3], f32) {
-    match token {
-        "MainMenu" => ([0.25, 0.06, 0.015], 1200.0),
+/// `CharModelFogInfo`; the main menu's is `AccountLogin.xml`'s `<FogColor>` and `fogFar`, the
+/// frame's whichever scene it shows (1.12.1 and 3.3.5a alike).
+fn scene_fog(scene: GlueScene) -> ([f32; 3], f32) {
+    if scene == GlueScene::MainMenu {
+        return ([0.25, 0.06, 0.015], 1200.0);
+    }
+    match scene_token(scene) {
         "Orc" => ([0.5, 0.5, 0.5], 270.0),
         "Dwarf" => ([0.85, 0.88, 1.0], 500.0),
         "NightElf" => ([0.25, 0.22, 0.55], 611.0),
@@ -734,7 +742,7 @@ pub(super) fn sync_glue_scene(
             } else {
                 scene_rig(&model.lights)
             };
-            let (fog_rgb, fog_far) = scene_fog(token);
+            let (fog_rgb, fog_far) = scene_fog(which);
             scene_light_blob(&rig, fog_rgb, fog_far, fog).write(&queue, &light);
             scene.ghost = ghost;
             // The character and the pet re-bake onto the rewritten buffer.
@@ -767,7 +775,7 @@ pub(super) fn sync_glue_scene(
         } else {
             scene_rig(&model.lights)
         };
-        let (fog_rgb, fog_far) = scene_fog(token);
+        let (fog_rgb, fog_far) = scene_fog(which);
         let blob = scene_light_blob(&rig, fog_rgb, fog_far, fog);
         let light = scene
             .light

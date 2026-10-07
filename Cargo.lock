@@ -510,6 +510,7 @@ dependencies = [
  "assert_no_alloc",
  "avian3d",
  "benilla-assets",
+ "benilla-expansions",
  "benilla-formats",
  "benilla-protocol",
  "benilla-srp",

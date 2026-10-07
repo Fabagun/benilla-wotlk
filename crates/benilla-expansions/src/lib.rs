@@ -78,6 +78,16 @@ pub struct ExpansionProfile {
     pub version: &'static str,
     pub build: u16,
     pub archives: ArchiveLayout,
+    pub glue: GlueScreens,
+}
+
+/// What the stock glue screens show, for the ones benilla draws natively.
+#[derive(Debug)]
+pub struct GlueScreens {
+    /// The login screen's background scene, `Interface\Glues\Models\UI_<name>\UI_<name>`.
+    pub login_scene: &'static str,
+    /// The WoW logo on the login, character select and character create screens.
+    pub logo: &'static str,
 }
 
 /// How the reference client composes its patch chain from the `Data` folder. Paths are relative to
@@ -161,6 +171,11 @@ static CLASSIC: ExpansionProfile = ExpansionProfile {
         tail: &["speech2.MPQ"],
         unsupported: &[],
     },
+    // `AccountLogin.xml`'s ModelFFX and `AccountLoginLogo`.
+    glue: GlueScreens {
+        login_scene: "MainMenu",
+        logo: "Interface\\Glues\\Common\\Glues-WoW-Logo",
+    },
 };
 
 /// 3.3.5a, when `Data\common.MPQ` exists (`0x402b90`; without it the client falls back to the
@@ -192,6 +207,12 @@ static WOTLK: ExpansionProfile = ExpansionProfile {
         tail: &[],
         // Mounted above the patches and overlaid into each of them (`0x405f30`).
         unsupported: &["alternate.MPQ"],
+    },
+    // `AccountLogin_OnLoad` sets the Northrend scene (`UI_MainMenu` is the streaming trial's);
+    // `AccountLoginLogo`, `CharacterSelectLogo` and `CharacterCreateLogo` name the logo.
+    glue: GlueScreens {
+        login_scene: "MainMenu_Northrend",
+        logo: "Interface\\Glues\\Common\\Glues-WoW-WotLKLogo",
     },
 };
 
@@ -242,6 +263,20 @@ mod tests {
         assert_eq!((CLASSIC.version, CLASSIC.build), ("1.12.1", 5875));
         assert_eq!((WOTLK.version, WOTLK.build), ("3.3.5a", 12340));
         assert_eq!(Expansion::Wotlk.to_string(), "3.3.5a (12340)");
+    }
+
+    #[test]
+    fn each_client_shows_its_own_login_scene_and_logo() {
+        assert_eq!(CLASSIC.glue.login_scene, "MainMenu");
+        assert_eq!(
+            CLASSIC.glue.logo,
+            "Interface\\Glues\\Common\\Glues-WoW-Logo"
+        );
+        assert_eq!(WOTLK.glue.login_scene, "MainMenu_Northrend");
+        assert_eq!(
+            WOTLK.glue.logo,
+            "Interface\\Glues\\Common\\Glues-WoW-WotLKLogo"
+        );
     }
 
     #[test]
