@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: Benilla Reference Global Capture
+## Notes: Developer instrument: records the reference client's addon-visible global namespace.
+## SavedVariables: BenillaReferenceCapture
+
+BenillaReferenceCapture.lua

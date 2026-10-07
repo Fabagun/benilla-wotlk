@@ -1,0 +1,616 @@
+# The 3.3.5a client's FrameScript events and argument formats from attributed producer families.
+# Generated with the catalog and callsite passes in scripts/gen-reference-wotlk.py.
+#
+# This remains advisory: the unit-field bridge and unit-token fan-out are mapped, but other
+# computed-id producer paths may remain. `advisory` means the listed shapes are real but may not be
+# exhaustive; `none` means neither a literal-id site nor a mapped computed family proved a producer.
+# arg_formats uses `|` for distinct shapes and `()` for zero Lua values. `?` means a literal-id
+# site crossed a control-flow boundary before its format pointer could be proven.
+# 606 named events; 473 with an attributed producer; 219 unresolved formats at literal-id sites.
+name	ids	producers	arg_formats	conf	note
+ACHIEVEMENT_EARNED	600	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ACTIONBAR_HIDEGRID	174	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ACTIONBAR_PAGE_CHANGED	175	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ACTIONBAR_SHOWGRID	173	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ACTIONBAR_SLOT_CHANGED	176	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ACTIONBAR_UPDATE_COOLDOWN	179	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ACTIONBAR_UPDATE_STATE	177	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ACTIONBAR_UPDATE_USABLE	178	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ACTIVE_TALENT_GROUP_CHANGED	626	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ADDON_ACTION_BLOCKED	428		?	none	no producer found at literal-id sites or mapped unit families
+ADDON_ACTION_FORBIDDEN	426	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ADDON_LOADED	423	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AREA_SPIRIT_HEALER_IN_RANGE	465	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AREA_SPIRIT_HEALER_OUT_OF_RANGE	466	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ARENA_OPPONENT_UPDATE	618	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ARENA_SEASON_WORLD_STATE	560	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ARENA_TEAM_INVITE_REQUEST	496	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ARENA_TEAM_ROSTER_UPDATE	495	signal	%d|()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ARENA_TEAM_UPDATE	494	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUCTION_BIDDER_LIST_UPDATE	420	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUCTION_HOUSE_CLOSED	416	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUCTION_HOUSE_DISABLED	670	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUCTION_HOUSE_SHOW	415	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUCTION_ITEM_LIST_UPDATE	418	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUCTION_MULTISELL_FAILURE	673	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUCTION_MULTISELL_START	671	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUCTION_MULTISELL_UPDATE	672	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUCTION_OWNED_LIST_UPDATE	419	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUTOEQUIP_BIND_CONFIRM	272	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUTOFOLLOW_BEGIN	357	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+AUTOFOLLOW_END	358	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BAG_CLOSED	315	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BAG_OPEN	313	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BAG_UPDATE	314	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BAG_UPDATE_COOLDOWN	316	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BANKFRAME_CLOSED	340	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BANKFRAME_OPENED	339	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BARBER_SHOP_APPEARANCE_APPLIED	573		?	none	no producer found at literal-id sites or mapped unit families
+BARBER_SHOP_CLOSE	571	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BARBER_SHOP_OPEN	570	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BARBER_SHOP_SUCCESS	572	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BATTLEFIELDS_CLOSED	412	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BATTLEFIELDS_SHOW	411	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BATTLEFIELD_MGR_EJECTED	648	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BATTLEFIELD_MGR_EJECT_PENDING	647	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BATTLEFIELD_MGR_ENTERED	645	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BATTLEFIELD_MGR_ENTRY_INVITE	644	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BATTLEFIELD_MGR_QUEUE_INVITE	649	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BATTLEFIELD_MGR_QUEUE_REQUEST_RESPONSE	646	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BATTLEFIELD_MGR_STATE_CHANGE	650	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BILLING_NAG_DIALOG	456	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BIND_ENCHANT	393	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_BLOCK_LIST_UPDATED	705	signal-guarded	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_CLOSED	692	signal-guarded	%d%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_CREATE_FAILED	702	signal-guarded	%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_CREATE_SUCCEEDED	701	signal-guarded	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_INVITE_FAILED	704	signal-guarded	%d%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_INVITE_SUCCEEDED	703	signal-guarded	%d%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_JOINED	690	signal-guarded	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_LEFT	691	signal-guarded	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_MEMBER_JOINED	698	signal-guarded	%d%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_MEMBER_LEFT	699	signal-guarded	%d%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_MEMBER_UPDATED	700	signal-guarded	%d%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_MESSAGE_BLOCKED	697	signal-guarded	%d%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_CHANNEL_MESSAGE_UNDELIVERABLE	696	signal-guarded	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CHAT_WHISPER_UNDELIVERABLE	689	signal-guarded	%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CONNECTED	675	signal-guarded	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CUSTOM_MESSAGE_CHANGED	685	signal-guarded	%u|()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_CUSTOM_MESSAGE_LOADED	686	signal-guarded	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_DISCONNECTED	676	signal-guarded	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_FRIEND_ACCOUNT_OFFLINE	712	signal-guarded	%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_FRIEND_ACCOUNT_ONLINE	711	signal-guarded	%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_FRIEND_INFO_CHANGED	684	signal-guarded	%d|()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_FRIEND_INVITE_ADDED	682	signal-guarded	%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_FRIEND_INVITE_LIST_INITIALIZED	680	signal-guarded	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_FRIEND_INVITE_REMOVED	683	signal-guarded	%d%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_FRIEND_INVITE_SEND_RESULT	681		?	none	no producer found at literal-id sites or mapped unit families
+BN_FRIEND_LIST_SIZE_CHANGED	679	signal-guarded	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_FRIEND_TOON_OFFLINE	714	signal-guarded	%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_FRIEND_TOON_ONLINE	713	signal-guarded	%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_MATURE_LANGUAGE_FILTER	715	signal-guarded	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_NEW_PRESENCE	709	signal-guarded	%u%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_REQUEST_FOF_FAILED	708	signal-guarded	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_REQUEST_FOF_SUCCEEDED	707	signal-guarded	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_SELF_OFFLINE	678	signal-guarded	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_SELF_ONLINE	677	signal-guarded	%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_SYSTEM_MESSAGE	706	signal-guarded	%s%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+BN_TOON_NAME_UPDATED	710	signal-guarded	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_ACTION_PENDING	583	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_CLOSE_EVENT	578	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_EVENT_ALARM	581	signal	%s%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_NEW_EVENT	576	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_OPEN_EVENT	577	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_UPDATE_ERROR	582	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_UPDATE_EVENT	579	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_UPDATE_EVENT_LIST	575	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_UPDATE_INVITE_LIST	574	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CALENDAR_UPDATE_PENDING_INVITES	580	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CANCEL_LOOT_ROLL	443	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CANCEL_SUMMON	455	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHANNEL_COUNT_UPDATE	547	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHANNEL_FLAGS_UPDATED	552	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHANNEL_INVITE_REQUEST	550	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHANNEL_PASSWORD_REQUEST	551	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHANNEL_ROSTER_UPDATE	548	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHANNEL_UI_UPDATE	546	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHANNEL_VOICE_UPDATE	549	signal	%d|%d%d|%d%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHARACTER_POINTS_CHANGED	246	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHAT_MSG_ACHIEVEMENT	238		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_ADDON	190	signal	%s%s%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHAT_MSG_AFK	213		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BATTLEGROUND	234		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BATTLEGROUND_LEADER	235		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BG_SYSTEM_ALLIANCE	227		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BG_SYSTEM_HORDE	228		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BG_SYSTEM_NEUTRAL	226		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BN_CONVERSATION	693		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BN_CONVERSATION_LIST	695		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BN_CONVERSATION_NOTICE	694		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BN_INLINE_TOAST_ALERT	718		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BN_INLINE_TOAST_BROADCAST	719		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BN_INLINE_TOAST_BROADCAST_INFORM	720		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BN_INLINE_TOAST_CONVERSATION	721		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BN_WHISPER	687		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_BN_WHISPER_INFORM	688		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_CHANNEL	207		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_CHANNEL_JOIN	208		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_CHANNEL_LEAVE	209		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_CHANNEL_LIST	210		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_CHANNEL_NOTICE	211		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_CHANNEL_NOTICE_USER	212		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_COMBAT_FACTION_CHANGE	225		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_COMBAT_HONOR_GAIN	224		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_COMBAT_MISC_INFO	222		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_COMBAT_XP_GAIN	223		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_DND	214		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_EMOTE	200		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_FILTERED	233		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_GUILD	195		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_GUILD_ACHIEVEMENT	239		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_IGNORED	215		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_LOOT	217		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_MONEY	218		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_MONSTER_EMOTE	206		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_MONSTER_PARTY	203		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_MONSTER_SAY	202		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_MONSTER_WHISPER	205		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_MONSTER_YELL	204		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_OFFICER	196		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_OPENING	219		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_PARTY	193		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_PARTY_LEADER	665		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_PET_INFO	221		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_RAID	194		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_RAID_BOSS_EMOTE	232		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_RAID_BOSS_WHISPER	231		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_RAID_LEADER	229		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_RAID_WARNING	230		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_RESTRICTED	236		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_SAY	192		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_SKILL	216		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_SYSTEM	191		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_TARGETICONS	669		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_TEXT_EMOTE	201	signal	%s%s%s%s%s%s%d%d%s%d%d%s%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CHAT_MSG_TRADESKILLS	220		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_WHISPER	198		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_WHISPER_INFORM	199		?	none	no producer found at literal-id sites or mapped unit families
+CHAT_MSG_YELL	197		?	none	no producer found at literal-id sites or mapped unit families
+CINEMATIC_START	360	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CINEMATIC_STOP	361	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CLOSE_INBOX_ITEM	453	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CLOSE_TABARD_FRAME	365	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CLOSE_WORLD_MAP	363		?	none	no producer found at literal-id sites or mapped unit families
+COMBAT_LOG_EVENT	566		?	none	no producer found at literal-id sites or mapped unit families
+COMBAT_LOG_EVENT_UNFILTERED	567		?	none	no producer found at literal-id sites or mapped unit families
+COMBAT_RATING_UPDATE	520	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+COMBAT_TEXT_UPDATE	484	signal	%s|%s%d|%s%d%d|%s%d%s|%s%s|%s%s%d|%s%s%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+COMMENTATOR_ENTER_WORLD	565	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+COMMENTATOR_MAP_UPDATE	564	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+COMMENTATOR_PLAYER_UPDATE	568	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+COMMENTATOR_SKIRMISH_MODE_REQUEST	717		?	none	no producer found at literal-id sites or mapped unit families
+COMMENTATOR_SKIRMISH_QUEUE_REQUEST	716	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+COMPANION_LEARNED	606	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+COMPANION_UNLEARNED	607	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+COMPANION_UPDATE	608	signal	%s|()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CONFIRM_BINDER	451	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CONFIRM_DISENCHANT_ROLL	445	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CONFIRM_LOOT_ROLL	444	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CONFIRM_SUMMON	454	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CONFIRM_TALENT_WIPE	450	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CONFIRM_XP_LOSS	387	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CORPSE_IN_INSTANCE	389		?	none	no producer found at literal-id sites or mapped unit families
+CORPSE_IN_RANGE	388		?	none	no producer found at literal-id sites or mapped unit families
+CORPSE_OUT_OF_RANGE	390	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CRITERIA_UPDATE	601	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CURRENCY_DISPLAY_UPDATE	605	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CURRENT_SPELL_CAST_CHANGED	243	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CURSOR_UPDATE	275	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+CVAR_UPDATE	298	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+DELETE_ITEM_CONFIRM	274	signal	%s%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+DISABLE_LOW_LEVEL_RAID	668	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+DISABLE_TAXI_BENCHMARK	524	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+DISABLE_XP_GAIN	643		?	none	no producer found at literal-id sites or mapped unit families
+DISPLAY_SIZE_CHANGED	449	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+DUEL_FINISHED	372	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+DUEL_INBOUNDS	371	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+DUEL_OUTOFBOUNDS	370	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+DUEL_REQUESTED	369	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ENABLE_LOW_LEVEL_RAID	667	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ENABLE_TAXI_BENCHMARK	523		?	none	no producer found at literal-id sites or mapped unit families
+ENABLE_XP_GAIN	642	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+END_BOUND_TRADEABLE	653	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+END_REFUND	652	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+EQUIPMENT_SETS_CHANGED	631	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+EQUIPMENT_SWAP_FINISHED	639	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+EQUIPMENT_SWAP_PENDING	638	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+EQUIP_BIND_CONFIRM	271	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+EXECUTE_CHAT_LINE	383	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+FRIENDLIST_UPDATE	342	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GLYPH_ADDED	611	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GLYPH_DISABLED	615	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GLYPH_ENABLED	614		?	none	no producer found at literal-id sites or mapped unit families
+GLYPH_REMOVED	612	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GLYPH_UPDATED	613	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GMRESPONSE_RECEIVED	655	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GMSURVEY_DISPLAY	477	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GM_PLAYER_INFO	401		?	none	no producer found at literal-id sites or mapped unit families
+GOSSIP_CLOSED	284	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GOSSIP_CONFIRM	281	signal	%d%s%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GOSSIP_CONFIRM_CANCEL	282	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GOSSIP_ENTER_CODE	283	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GOSSIP_SHOW	280	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANKBAGSLOTS_CHANGED	538	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANKFRAME_CLOSED	537	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANKFRAME_OPENED	536	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANKLOG_UPDATE	542	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANK_ITEM_LOCK_CHANGED	539	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANK_TEXT_CHANGED	545	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANK_UPDATE_MONEY	541	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANK_UPDATE_TABS	540	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANK_UPDATE_TEXT	544	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDBANK_UPDATE_WITHDRAWMONEY	543	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILDTABARD_UPDATE	562	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILD_EVENT_LOG_UPDATE	561	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILD_INVITE_CANCEL	266		?	none	no producer found at literal-id sites or mapped unit families
+GUILD_INVITE_REQUEST	265	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILD_MOTD	267	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILD_REGISTRAR_CLOSED	368	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILD_REGISTRAR_SHOW	367	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+GUILD_ROSTER_UPDATE	400	signal	%d|()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+HONOR_CURRENCY_UPDATE	497	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+IGNORELIST_UPDATE	343	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+IGR_BILLING_NAG_DIALOG	457	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+INSPECT_ACHIEVEMENT_READY	619	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+INSPECT_HONOR_UPDATE	463	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+INSPECT_TALENT_READY	556	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+INSTANCE_BOOT_START	446	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+INSTANCE_BOOT_STOP	447	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+INSTANCE_ENCOUNTER_ENGAGE_UNIT	661	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+INSTANCE_LOCK_START	632	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+INSTANCE_LOCK_STOP	633	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ITEM_LOCKED	635		?	none	no producer found at literal-id sites or mapped unit families
+ITEM_LOCK_CHANGED	150		?	none	no producer found at literal-id sites or mapped unit families
+ITEM_PUSH	248	signal	%d%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ITEM_TEXT_BEGIN	276	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ITEM_TEXT_CLOSED	279	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ITEM_TEXT_READY	278	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ITEM_TEXT_TRANSLATION	277	signal	%f	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ITEM_UNLOCKED	636		?	none	no producer found at literal-id sites or mapped unit families
+KNOWLEDGE_BASE_ARTICLE_LOAD_FAILURE	491	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+KNOWLEDGE_BASE_ARTICLE_LOAD_SUCCESS	490	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+KNOWLEDGE_BASE_QUERY_LOAD_FAILURE	489	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+KNOWLEDGE_BASE_QUERY_LOAD_SUCCESS	488	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+KNOWLEDGE_BASE_SERVER_MESSAGE	493	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+KNOWLEDGE_BASE_SETUP_LOAD_FAILURE	487	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+KNOWLEDGE_BASE_SETUP_LOAD_SUCCESS	486	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+KNOWLEDGE_BASE_SYSTEM_MOTD_UPDATED	492	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+KNOWN_CURRENCY_TYPES_UPDATE	604	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+KNOWN_TITLES_UPDATE	498		?	none	no producer found at literal-id sites or mapped unit families
+LANGUAGE_LIST_CHANGED	240	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LEARNED_SPELL_IN_TAB	448	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LEVEL_GRANT_PROPOSED	595	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_BOOT_PROPOSAL_UPDATE	512	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_COMPLETION_REWARD	517	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_LOCK_INFO_RECEIVED	513	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_OFFER_CONTINUE	515	signal	%s%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_OPEN_FROM_GOSSIP	516	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_PROPOSAL_FAILED	504	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_PROPOSAL_SHOW	503	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_PROPOSAL_SUCCEEDED	505	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_PROPOSAL_UPDATE	502	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_QUEUE_STATUS_UPDATE	511	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_ROLE_CHECK_HIDE	509	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_ROLE_CHECK_ROLE_CHOSEN	510	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_ROLE_CHECK_SHOW	508	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_ROLE_CHECK_UPDATE	507	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_ROLE_UPDATE	506	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_UPDATE	501	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LFG_UPDATE_RANDOM_INFO	514	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LOCALPLAYER_PET_RENAMED	317	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LOGOUT_CANCEL	261	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LOOT_BIND_CONFIRM	270	signal	%u	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LOOT_CLOSED	252	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LOOT_OPENED	249	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LOOT_SLOT_CHANGED	251	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+LOOT_SLOT_CLEARED	250	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MACRO_ACTION_BLOCKED	427	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MACRO_ACTION_FORBIDDEN	425	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MAIL_CLOSED	403	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MAIL_FAILED	452		?	none	no producer found at literal-id sites or mapped unit families
+MAIL_INBOX_UPDATE	408	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MAIL_LOCK_SEND_ITEMS	409	signal	%d%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MAIL_SEND_INFO_UPDATE	406	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MAIL_SEND_SUCCESS	407	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MAIL_SHOW	402	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MAIL_SUCCESS	659		?	none	no producer found at literal-id sites or mapped unit families
+MAIL_UNLOCK_SEND_ITEMS	410	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MERCHANT_CLOSED	304	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MERCHANT_SHOW	302	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MERCHANT_UPDATE	303	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MINIGAME_UPDATE	472	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MINIMAP_PING	351	signal	%s%f%f	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MINIMAP_UPDATE_TRACKING	170		?	none	no producer found at literal-id sites or mapped unit families
+MINIMAP_UPDATE_ZOOM	169	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MIRROR_TIMER_PAUSE	353	signal	%s%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MIRROR_TIMER_START	352	signal	%s%d%d%d%d%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MIRROR_TIMER_STOP	354	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MODIFIER_STATE_CHANGED	521	signal	%s%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+MOVIE_COMPRESSING_PROGRESS	532		?	none	no producer found at literal-id sites or mapped unit families
+MOVIE_RECORDING_PROGRESS	531		?	none	no producer found at literal-id sites or mapped unit families
+MOVIE_UNCOMPRESSED_MOVIE	533		?	none	no producer found at literal-id sites or mapped unit families
+MUTELIST_UPDATE	344	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+NEW_AUCTION_UPDATE	417	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+NEW_TITLE_EARNED	499		?	none	no producer found at literal-id sites or mapped unit families
+NPC_PVPQUEUE_ANYWHERE	640	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+OLD_TITLE_LOST	500		?	none	no producer found at literal-id sites or mapped unit families
+OPEN_MASTER_LOOT_LIST	440	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+OPEN_TABARD_FRAME	364	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PARTY_CONVERTED_TO_RAID	621		?	none	no producer found at literal-id sites or mapped unit families
+PARTY_INVITE_CANCEL	264	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PARTY_INVITE_REQUEST	263	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PARTY_LEADER_CHANGED	182		?	none	no producer found at literal-id sites or mapped unit families
+PARTY_LFG_RESTRICTED	518	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PARTY_LOOT_METHOD_CHANGED	185		?	none	no producer found at literal-id sites or mapped unit families
+PARTY_MEMBERS_CHANGED	181		?	none	no producer found at literal-id sites or mapped unit families
+PARTY_MEMBER_DISABLE	184		?	none	no producer found at literal-id sites or mapped unit families
+PARTY_MEMBER_ENABLE	183		?	none	no producer found at literal-id sites or mapped unit families
+PETITION_CLOSED	382	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PETITION_SHOW	381	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PETITION_VENDOR_CLOSED	482	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PETITION_VENDOR_SHOW	481	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PETITION_VENDOR_UPDATE	483	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_ATTACK_START	320	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_ATTACK_STOP	321	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_BAR_HIDE	349		?	none	no producer found at literal-id sites or mapped unit families
+PET_BAR_HIDEGRID	348	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_BAR_SHOWGRID	347	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_BAR_UPDATE	345	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_BAR_UPDATE_COOLDOWN	346	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_BAR_UPDATE_USABLE	350	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_DISMISS_START	374	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_FORCE_NAME_DECLENSION	594	signal	%s|%s%s%s%s%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_RENAMEABLE	603	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_SPELL_POWER_UPDATE	674	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_STABLE_CLOSED	434	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_STABLE_SHOW	431	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_STABLE_UPDATE	432	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_STABLE_UPDATE_PAPERDOLL	433	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_TALENT_UPDATE	627	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_UI_CLOSE	422	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PET_UI_UPDATE	421	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYERBANKBAGSLOTS_CHANGED	341	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYERBANKSLOTS_CHANGED	338	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_ALIVE	257	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_AURAS_CHANGED	154		?	none	no producer found at literal-id sites or mapped unit families
+PLAYER_CAMPING	259		?	none	no producer found at literal-id sites or mapped unit families
+PLAYER_CONTROL_GAINED	160	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_CONTROL_LOST	159	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_DAMAGE_DONE_MODS	164		?	none	no producer found at literal-id sites or mapped unit families
+PLAYER_DEAD	258	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_DIFFICULTY_CHANGED	664	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_ENTERING_BATTLEGROUND	569	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_ENTERING_WORLD	255	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_ENTER_COMBAT	155		?	none	no producer found at literal-id sites or mapped unit families
+PLAYER_EQUIPMENT_CHANGED	634	signal	%d|%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_FARSIGHT_FOCUS_CHANGED	161	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_FLAGS_CHANGED	399	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_FOCUS_CHANGED	158	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_GAINS_VEHICLE_DATA	592	signal	%s%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_GUILD_UPDATE	336	signal|token-fanout	%s|()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_LEAVE_COMBAT	156	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_LEAVING_WORLD	256	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_LEVEL_UP	162	signal	%d%d%d%d%d%d%d%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_LOGIN	253	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_LOGOUT	254	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_LOSES_VEHICLE_DATA	593	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_MONEY	163	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_PVP_KILLS_CHANGED	461		?	none	no producer found at literal-id sites or mapped unit families
+PLAYER_PVP_RANK_CHANGED	462		?	none	no producer found at literal-id sites or mapped unit families
+PLAYER_QUITING	260		?	none	no producer found at literal-id sites or mapped unit families
+PLAYER_REGEN_DISABLED	152	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_REGEN_ENABLED	153	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_ROLES_ASSIGNED	519	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_SKINNED	458	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_TALENT_UPDATE	625	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_TARGET_CHANGED	157	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_TOTEM_UPDATE	165	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_TRADE_MONEY	312	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_UNGHOST	392	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_UPDATE_RESTING	397	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAYER_XP_UPDATE	151		?	none	no producer found at literal-id sites or mapped unit families
+PLAYTIME_CHANGED	467	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PLAY_MOVIE	597	signal	%s%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PREVIEW_PET_TALENT_POINTS_CHANGED	629	signal	%d%d%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PREVIEW_TALENT_POINTS_CHANGED	628	signal	%d%d%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PVPQUEUE_ANYWHERE_SHOW	622	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+PVPQUEUE_ANYWHERE_UPDATE_AVAILABLE	623	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_ACCEPTED	624	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_ACCEPT_CONFIRM	337	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_COMPLETE	288	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_DETAIL	286	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_FINISHED	289	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_GREETING	285	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_ITEM_UPDATE	290	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_LOG_UPDATE	293		?	none	no producer found at literal-id sites or mapped unit families
+QUEST_POI_UPDATE	663		?	none	no producer found at literal-id sites or mapped unit families
+QUEST_PROGRESS	287	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_QUERY_COMPLETE	662	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+QUEST_WATCH_UPDATE	485	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+RAID_INSTANCE_WELCOME	530	signal	%s%d%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+RAID_ROSTER_UPDATE	435	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+RAID_TARGET_UPDATE	476	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+RAISED_AS_GHOUL	620	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+READY_CHECK	473	signal	%s%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+READY_CHECK_CONFIRM	474	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+READY_CHECK_FINISHED	475	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+RECEIVED_ACHIEVEMENT_LIST	602	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+REPLACE_ENCHANT	394	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+RESURRECT_REQUEST	262	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+RUNE_POWER_UPDATE	598	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+RUNE_TYPE_UPDATE	599	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SCREENSHOT_FAILED	172	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SCREENSHOT_SUCCEEDED	171	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SEND_MAIL_COD_CHANGED	405	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SEND_MAIL_MONEY_CHANGED	404	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SKILL_LINES_CHANGED	247	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SOCKET_INFO_CLOSE	480	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SOCKET_INFO_UPDATE	479	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SOUND_DEVICE_UPDATE	563	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SPELLS_CHANGED	242	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SPELL_UPDATE_COOLDOWN	244	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SPELL_UPDATE_USABLE	245	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+START_AUTOREPEAT_SPELL	429	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+START_LOOT_ROLL	442	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+START_MINIGAME	471	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+STOP_AUTOREPEAT_SPELL	430	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+SYNCHRONIZE_SETTINGS	596		?	none	no producer found at literal-id sites or mapped unit families
+SYSMSG	186		?	none	no producer found at literal-id sites or mapped unit families
+TABARD_CANSAVE_CHANGED	366	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TABARD_SAVE_PENDING	459	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TALENTS_INVOLUNTARILY_RESET	660	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TAXIMAP_CLOSED	292	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TAXIMAP_OPENED	291	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TIME_PLAYED_MSG	241	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRACKED_ACHIEVEMENT_UPDATE	617	signal	%d|%d%d%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_ACCEPT_UPDATE	308	signal	%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_CLOSED	306	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_MONEY_CHANGED	311	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_PLAYER_ITEM_CHANGED	310	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_POTENTIAL_BIND_ENCHANT	396	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_REPLACE_ENCHANT	395	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_REQUEST	268		?	none	no producer found at literal-id sites or mapped unit families
+TRADE_REQUEST_CANCEL	269	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_SHOW	305	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_SKILL_CLOSE	301	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_SKILL_FILTER_UPDATE	637	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_SKILL_SHOW	299	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_SKILL_UPDATE	300	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_TARGET_ITEM_CHANGED	309	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRADE_UPDATE	307	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRAINER_CLOSED	297	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRAINER_DESCRIPTION_UPDATE	296	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRAINER_SHOW	294	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TRAINER_UPDATE	295	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+TUTORIAL_TRIGGER	373	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UI_ERROR_MESSAGE	187	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UI_INFO_MESSAGE	188	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_ATTACK	318	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_ATTACK_POWER	117|118|119	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_ATTACK_SPEED	56|57	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_AURA	142		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_CLASSIFICATION_CHANGED	148	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_COMBAT	143	signal	%s%s%s%d%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_COMBO_POINTS	149	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_DAMAGE	64|65|66|67	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_DEFENSE	319	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_DISPLAYPOWER	17	token-fanout|unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_DYNAMIC_FLAGS	73	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_ENERGY	22	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_ENTERED_VEHICLE	588		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_ENTERING_VEHICLE	587		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_EXITED_VEHICLE	590	signal	%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_EXITING_VEHICLE	589	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_FACTION	49	token-fanout|unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_FLAGS	53|54	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_FOCUS	21	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_HAPPINESS	23	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_HEALTH	18	token-fanout|unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_INVENTORY_CHANGED	147	signal|token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_LEVEL	48	signal|token-fanout|unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_MANA	19|125|132	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_MAXENERGY	30	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_MAXFOCUS	29	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_MAXHAPPINESS	31	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_MAXHEALTH	26	token-fanout|unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_MAXMANA	27	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_MAXRAGE	28	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_MAXRUNIC_POWER	33	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_MODEL_CHANGED	146	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_NAME_UPDATE	144	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_PET	0|2	signal|token-fanout|unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_PET_EXPERIENCE	71|72	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_PORTRAIT_UPDATE	145	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_QUEST_LOG_CHANGED	460	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_RAGE	20	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_RANGEDDAMAGE	58|123|124	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_RANGED_ATTACK_POWER	120|121|122	signal|unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_RESISTANCES	93|94|95|96|97|98|99|100|101|102|103|104|105|106|107|108|109|110|111|112|113	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_RUNIC_POWER	25	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_SPELLCAST_CHANNEL_START	331		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_CHANNEL_STOP	333		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_CHANNEL_UPDATE	332		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_DELAYED	329		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_FAILED	326		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_FAILED_QUIET	327		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_INTERRUPTED	328		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_INTERRUPTIBLE	334		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_NOT_INTERRUPTIBLE	335		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_SENT	323	signal	%s%s%s%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_SPELLCAST_START	324		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_STOP	325		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_SPELLCAST_SUCCEEDED	330		?	none	no producer found at literal-id sites or mapped unit families
+UNIT_STATS	78|79|80|81|82|139	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_TARGET	12	unit-field-bridge	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_THREAT_LIST_UPDATE	609	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UNIT_THREAT_SITUATION_UPDATE	610	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_BATTLEFIELD_SCORE	414	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_BATTLEFIELD_STATUS	413	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_BINDINGS	375	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_BONUS_ACTIONBAR	180	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_CHAT_COLOR	189	signal	%s%f%f%f	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_CHAT_COLOR_NAME_BY_CLASS	654	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_CHAT_WINDOWS	386	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_EXHAUSTION	398	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_FACTION	362	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_FLOATING_CHAT_WINDOWS	529	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_GM_STATUS	391	signal	%d	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_INSTANCE_INFO	478	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_INVENTORY_ALERTS	437	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_INVENTORY_DURABILITY	438	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_LFG_LIST	469	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_LFG_LIST_INCREMENTAL	470		?	none	no producer found at literal-id sites or mapped unit families
+UPDATE_LFG_TYPES	468		?	none	no producer found at literal-id sites or mapped unit families
+UPDATE_MACROS	384	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_MASTER_LOOT_LIST	441	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_MOUSEOVER_UNIT	322	signal	?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_MULTI_CAST_ACTIONBAR	641		?	none	no producer found at literal-id sites or mapped unit families
+UPDATE_PENDING_MAIL	436	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_SHAPESHIFT_COOLDOWN	379	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_SHAPESHIFT_FORM	377	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_SHAPESHIFT_FORMS	376		?	none	no producer found at literal-id sites or mapped unit families
+UPDATE_SHAPESHIFT_USABLE	378	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_STEALTH	522	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_TICKET	385	signal	%d%s%f%f%f%d%d|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_TRADESKILL_RECAST	439	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+UPDATE_WORLD_STATES	464	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+USE_BIND_CONFIRM	273	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+USE_GLYPH	616	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VARIABLES_LOADED	424	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VEHICLE_ANGLE_SHOW	584	signal	%d|()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VEHICLE_ANGLE_UPDATE	585	signal	%f%f	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VEHICLE_PASSENGERS_CHANGED	591	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VEHICLE_POWER_SHOW	586	signal	%d|()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VEHICLE_UPDATE	656	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VOICE_CHANNEL_STATUS_UPDATE	528		?	none	no producer found at literal-id sites or mapped unit families
+VOICE_CHAT_ENABLED_UPDATE	554	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VOICE_LEFT_SESSION	555	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VOICE_PLATE_START	558		?	none	no producer found at literal-id sites or mapped unit families
+VOICE_PLATE_STOP	559		?	none	no producer found at literal-id sites or mapped unit families
+VOICE_PUSH_TO_TALK_START	534		?	none	no producer found at literal-id sites or mapped unit families
+VOICE_PUSH_TO_TALK_STOP	535		?	none	no producer found at literal-id sites or mapped unit families
+VOICE_SELF_MUTE	557		?	none	no producer found at literal-id sites or mapped unit families
+VOICE_SESSIONS_UPDATE	553	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VOICE_START	525	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VOICE_STATUS_UPDATE	527		?	none	no producer found at literal-id sites or mapped unit families
+VOICE_STOP	526	token-fanout	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+VOTE_KICK_REASON_NEEDED	666	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+WEAR_EQUIPMENT_SET	630	signal	%s	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+WHO_LIST_UPDATE	380	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+WORLD_MAP_NAME_UPDATE	356	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+WORLD_MAP_UPDATE	355	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+WORLD_STATE_UI_TIMER_UPDATE	651	signal	()	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+WOW_MOUSE_NOT_FOUND	657	signal	()|?	advisory	literal sites plus mapped unit families; other computed-id paths may remain
+ZONE_CHANGED	166		?	none	no producer found at literal-id sites or mapped unit families
+ZONE_CHANGED_INDOORS	167		?	none	no producer found at literal-id sites or mapped unit families
+ZONE_CHANGED_NEW_AREA	168		?	none	no producer found at literal-id sites or mapped unit families
