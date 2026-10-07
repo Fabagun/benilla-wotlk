@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{Context, Result};
 use benilla_dbc::{FieldType, Schema, SchemaField};
+use benilla_expansions::dbc as dbc_layout;
 
 use crate::dbc::{parse, str_at, u32_at};
 use crate::items::ItemDisplay;
@@ -21,6 +22,9 @@ const HAIR_SUBSTITUTE_VARIATION: u8 = 1;
 
 /// An atlas rect `(x, y, w, h)` in pixels.
 type Tile = (u32, u32, u32, u32);
+
+/// The side of the body atlas the tiles below are laid out on.
+const ATLAS_SIDE: u32 = 256;
 
 /// The head strip of the 256² partition `0x475c50` writes: g8 the upper band, g9 the lower.
 const TILE_G8: Tile = (0, 160, 128, 32);
@@ -234,26 +238,23 @@ impl CharSections {
         let bytes = chain
             .read_file(CHAR_SECTIONS)
             .with_context(|| format!("reading {CHAR_SECTIONS}"))?;
-        let rs = parse(&bytes, char_sections_schema(), "CharSections")?;
+        let l = &chain.expansion().profile().dbc.char_sections;
+        let rs = parse(&bytes, char_sections_schema(l), "CharSections")?;
         let mut sections = HashMap::with_capacity(rs.records().len());
         for r in rs.records() {
-            // fields: ID, Race, Sex, SectionType, Variation, Color, Tex0, Tex1, Tex2, Flags.
             if let (Some(race), Some(sex), Some(ty), Some(var), Some(color)) = (
                 u32_at(r, 1),
                 u32_at(r, 2),
                 u32_at(r, 3),
-                u32_at(r, 4),
-                u32_at(r, 5),
+                u32_at(r, l.variation),
+                u32_at(r, l.color),
             ) {
-                let texs = [
-                    str_at(&rs, r, 6).unwrap_or_default(),
-                    str_at(&rs, r, 7).unwrap_or_default(),
-                    str_at(&rs, r, 8).unwrap_or_default(),
-                ];
+                let texs =
+                    std::array::from_fn(|i| str_at(&rs, r, l.textures + i).unwrap_or_default());
                 let key = (race as u8, sex as u8, ty as u8, var as u8, color as u8);
-                // A row flagged `0x1` can share its key with a standard row (Human male skin 0 has
-                // `…Skin00_00` and `…_100`); the standard row wins in either order.
-                let extra = u32_at(r, 9).unwrap_or(0) & 0x1 != 0;
+                // An extra row can share its key with a standard one (1.12.1's Human male skin 0
+                // has `…Skin00_00` and `…_100`); the standard row wins in either order.
+                let extra = !l.offered(u32_at(r, l.flags).unwrap_or(0));
                 if extra {
                     sections.entry(key).or_insert(texs);
                 } else {
@@ -282,9 +283,14 @@ impl CompositePlan {
     pub fn run(&self, mut read: impl FnMut(&str) -> Result<BlpMipChain>) -> Result<BlpMipChain> {
         let mut atlas =
             read(&self.base).with_context(|| format!("reading base skin '{}'", self.base))?;
+        // The tiles are 1.12.1's 256² partition; 3.3.5a's base skins are 512² with the same
+        // partition doubled, so the base skin's width scales every tile.
+        let scale = (atlas.width / ATLAS_SIDE).max(1);
         for (candidates, tile) in &self.layers {
             if let Some(overlay) = candidates.iter().find_map(|path| read(path).ok()) {
-                blit_over(&mut atlas, &overlay, *tile);
+                let (x, y, w, h) = *tile;
+                let tile = (x * scale, y * scale, w * scale, h * scale);
+                blit_over(&mut atlas, &overlay, tile, scale);
             }
         }
         Ok(atlas)
@@ -531,30 +537,38 @@ pub fn equip_region_candidates(layer: usize, name: &str, sex: u8) -> [String; 2]
 
 /// Source-over blit of an overlay's mip pyramid at `tile`, level by level, from the overlay's own
 /// origin (`0x4770f0`: src `(0,0)`, extent the tile); an opaque texel copies, the client's REPLACE.
-fn blit_over(dst: &mut BlpMipChain, src: &BlpMipChain, tile: Tile) {
+fn blit_over(dst: &mut BlpMipChain, src: &BlpMipChain, tile: Tile, scale: u32) {
     // Both chains must be decoded RGBA: DXT blocks would blend into garbage without failing.
     debug_assert!(
         dst.is_rgba8() && src.is_rgba8(),
         "character-skin compositing needs decoded chains on both sides"
     );
     let (tx, ty, tw, th) = tile;
-    let levels = dst.mips.len().min(src.mips.len());
-    for i in 0..levels {
+    // On an atlas `scale` times 1.12.1's, an overlay narrower than its tile (a 3.3.5a 128×64 item
+    // texture on a 512² atlas's 256×128 tile) is `shift` levels down: its level j fills the tile's
+    // level j + shift, and the levels above `shift` are drawn from its level 0, stretched. At
+    // scale 1 nothing stretches: 1.12.1 copies from the overlay's origin, extent the tile.
+    let shift = (tw / src.width.max(1)).clamp(1, scale.max(1)).ilog2() as usize;
+    for i in 0..dst.mips.len() {
         let dw = (dst.width >> i).max(1) as usize;
         let dh = (dst.height >> i).max(1) as usize;
-        let sw = (src.width >> i).max(1) as usize;
-        let sh = (src.height >> i).max(1) as usize;
         let (ox, oy) = ((tx >> i) as usize, (ty >> i) as usize);
-        let cw = ((tw >> i).max(1) as usize)
-            .min(sw)
-            .min(dw.saturating_sub(ox));
-        let ch = ((th >> i).max(1) as usize)
-            .min(sh)
-            .min(dh.saturating_sub(oy));
-        let (d, s) = (&mut dst.mips[i], &src.mips[i]);
+        let (tw_i, th_i) = ((tw >> i).max(1) as usize, (th >> i).max(1) as usize);
+        let j = i.saturating_sub(shift);
+        let Some(s) = src.mips.get(j) else { break };
+        let sw = (src.width >> j).max(1) as usize;
+        let sh = (src.height >> j).max(1) as usize;
+        // At or past `shift` the source level is the tile's size and copies texel for texel, as
+        // every 1.12.1 overlay does; above it the source is stretched by nearest texel.
+        let stretch = i < shift;
+        let cw = if stretch { tw_i } else { tw_i.min(sw) }.min(dw.saturating_sub(ox));
+        let ch = if stretch { th_i } else { th_i.min(sh) }.min(dh.saturating_sub(oy));
+        let d = &mut dst.mips[i];
         for row in 0..ch {
+            let sr = if stretch { row * sh / th_i } else { row };
             for col in 0..cw {
-                let si = (row * sw + col) * 4;
+                let sc = if stretch { col * sw / tw_i } else { col };
+                let si = (sr * sw + sc) * 4;
                 let di = ((oy + row) * dw + (ox + col)) * 4;
                 if si + 4 > s.len() || di + 4 > d.len() {
                     continue;
@@ -578,20 +592,22 @@ fn blit_over(dst: &mut BlpMipChain, src: &BlpMipChain, tile: Tile) {
 }
 
 /// CharSections.dbc: 10 fields, three of them texture names.
-pub(crate) fn char_sections_schema() -> Schema {
+pub(crate) fn char_sections_schema(l: &dbc_layout::CharSections) -> Schema {
     let mut s = Schema::new("CharSections");
-    for (name, ty) in [
-        ("ID", FieldType::UInt32),
-        ("RaceID", FieldType::UInt32),
-        ("SexID", FieldType::UInt32),
-        ("SectionType", FieldType::UInt32),
-        ("VariationIndex", FieldType::UInt32),
-        ("ColorIndex", FieldType::UInt32),
-        ("TextureName0", FieldType::String),
-        ("TextureName1", FieldType::String),
-        ("TextureName2", FieldType::String),
-        ("Flags", FieldType::UInt32),
-    ] {
+    for i in 0..l.fields {
+        let (name, ty) = match i {
+            0 => ("ID".into(), FieldType::UInt32),
+            1 => ("RaceID".into(), FieldType::UInt32),
+            2 => ("SexID".into(), FieldType::UInt32),
+            3 => ("SectionType".into(), FieldType::UInt32),
+            _ if i == l.variation => ("VariationIndex".into(), FieldType::UInt32),
+            _ if i == l.color => ("ColorIndex".into(), FieldType::UInt32),
+            _ if (l.textures..l.textures + 3).contains(&i) => {
+                (format!("TextureName{}", i - l.textures), FieldType::String)
+            }
+            _ if i == l.flags => ("Flags".into(), FieldType::UInt32),
+            _ => (format!("c{i}"), FieldType::UInt32),
+        };
         s.add_field(SchemaField::new(name, ty));
     }
     s
@@ -1204,7 +1220,12 @@ mod tests {
     fn blit_over_replaces_blends_and_clamps() {
         let mut dst = chain(2, 2, [128, 128, 128, 255].repeat(4));
 
-        blit_over(&mut dst, &chain(1, 1, vec![255, 0, 0, 255]), (0, 0, 1, 1));
+        blit_over(
+            &mut dst,
+            &chain(1, 1, vec![255, 0, 0, 255]),
+            (0, 0, 1, 1),
+            1,
+        );
         assert_eq!(
             &dst.mips[0][0..4],
             &[255, 0, 0, 255],
@@ -1217,7 +1238,12 @@ mod tests {
         );
 
         // Half-alpha blue over grey: R≈64, B≈191.
-        blit_over(&mut dst, &chain(1, 1, vec![0, 0, 255, 128]), (1, 1, 1, 1));
+        blit_over(
+            &mut dst,
+            &chain(1, 1, vec![0, 0, 255, 128]),
+            (1, 1, 1, 1),
+            1,
+        );
         let px = &dst.mips[0][12..16];
         assert!((px[0] as i32 - 64).abs() <= 1, "blended R ≈ 128·(1−a)");
         assert!(
@@ -1227,8 +1253,53 @@ mod tests {
         assert_eq!(px[3], 255, "over an opaque base the result stays opaque");
 
         let before = dst.mips[0].clone();
-        blit_over(&mut dst, &chain(1, 1, vec![1, 2, 3, 0]), (0, 0, 1, 1));
+        blit_over(&mut dst, &chain(1, 1, vec![1, 2, 3, 0]), (0, 0, 1, 1), 1);
         assert_eq!(dst.mips[0], before, "transparent texel is a no-op");
+    }
+
+    /// On a doubled atlas a half-size overlay fills its doubled tile: stretched at level 0, texel
+    /// for texel from its level 0 at level 1. On a 1.12.1 atlas it covers only its own extent.
+    #[test]
+    fn a_half_size_overlay_fills_a_doubled_tile_only_on_a_doubled_atlas() {
+        let grey = [9, 9, 9, 255];
+        let atlas = |side: u32| BlpMipChain {
+            width: side,
+            height: side,
+            texels: crate::BlpTexels::Rgba8Unorm,
+            mips: vec![
+                grey.repeat((side * side) as usize),
+                grey.repeat((side * side / 4) as usize),
+            ],
+        };
+        // A 2×1 overlay: red, then green.
+        let overlay = chain(2, 1, [[255, 0, 0, 255], [0, 255, 0, 255]].concat());
+        let px = |c: &BlpMipChain, level: usize, w: u32, x: u32, y: u32| {
+            let i = ((y * w + x) * 4) as usize;
+            c.mips[level][i..i + 4].to_vec()
+        };
+
+        let mut wotlk = atlas(4);
+        blit_over(&mut wotlk, &overlay, (0, 0, 4, 2), 2);
+        for (x, want) in [
+            (0, [255, 0, 0, 255]),
+            (1, [255, 0, 0, 255]),
+            (2, [0, 255, 0, 255]),
+            (3, [0, 255, 0, 255]),
+        ] {
+            assert_eq!(px(&wotlk, 0, 4, x, 0), want, "level 0, x {x}");
+            assert_eq!(px(&wotlk, 0, 4, x, 1), want, "level 0, x {x}, row 1");
+        }
+        assert_eq!(px(&wotlk, 1, 2, 0, 0), [255, 0, 0, 255]);
+        assert_eq!(px(&wotlk, 1, 2, 1, 0), [0, 255, 0, 255]);
+
+        let mut classic = atlas(4);
+        blit_over(&mut classic, &overlay, (0, 0, 4, 2), 1);
+        assert_eq!(
+            px(&classic, 0, 4, 1, 0),
+            [0, 255, 0, 255],
+            "copied, not stretched"
+        );
+        assert_eq!(px(&classic, 0, 4, 2, 0), grey, "past the overlay's extent");
     }
 
     /// On the shipped files a Human male's head and pelvis tiles change, and the torso does not.

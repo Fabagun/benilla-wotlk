@@ -5,6 +5,10 @@
 use std::fmt;
 use std::sync::OnceLock;
 
+pub mod dbc;
+
+pub use dbc::DbcLayouts;
+
 /// A supported reference client.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Expansion {
@@ -77,8 +81,29 @@ pub struct ExpansionProfile {
     pub expansion: Expansion,
     pub version: &'static str,
     pub build: u16,
+    pub logon: LogonFacts,
     pub archives: ArchiveLayout,
     pub glue: GlueScreens,
+    pub dbc: DbcLayouts,
+    /// The `ChrRaces` ids a player can create, ascending.
+    pub playable_races: &'static [u8],
+    /// The highest geoset id the character compositor selects; a character model's higher ids
+    /// keep the visibility they load with.
+    pub character_geosets_through: u16,
+}
+
+/// What the client tells realmd about itself.
+#[derive(Debug)]
+pub struct LogonFacts {
+    /// The logon challenge's protocol version byte.
+    pub protocol_version: u8,
+    /// The logon challenge's major, minor and patch version.
+    pub version: [u8; 3],
+    /// The client's integrity digest `H` under the mangos-family `crc_salt`, which the logon
+    /// proof's `crc_hash` answers as `SHA1(A ‖ H)`: the digest the Windows client computes.
+    pub integrity_windows: [u8; 20],
+    /// The same for the Mac client.
+    pub integrity_macos: [u8; 20],
 }
 
 /// What the stock glue screens show, for the ones benilla draws natively.
@@ -153,6 +178,20 @@ static CLASSIC: ExpansionProfile = ExpansionProfile {
     expansion: Expansion::Classic,
     version: "1.12.1",
     build: 5875,
+    // `H`: vmangos's `allowed_clients` row (`20221117065844_logon.sql`), identical to cmangos's
+    // `RealmList.cpp`.
+    logon: LogonFacts {
+        protocol_version: 3,
+        version: [1, 12, 1],
+        integrity_windows: [
+            0x95, 0xed, 0xb2, 0x7c, 0x78, 0x23, 0xb3, 0x63, 0xcb, 0xdd, 0xab, 0x56, 0xa3, 0x92,
+            0xe7, 0xcb, 0x73, 0xfc, 0xca, 0x20,
+        ],
+        integrity_macos: [
+            0x8d, 0x17, 0x3c, 0xc3, 0x81, 0x96, 0x1e, 0xeb, 0xab, 0xf3, 0x36, 0xf5, 0xe6, 0x67,
+            0x5b, 0x10, 0x1b, 0xb5, 0x13, 0xe5,
+        ],
+    },
     archives: ArchiveLayout {
         base: &[
             optional("dbc.MPQ"),
@@ -176,6 +215,11 @@ static CLASSIC: ExpansionProfile = ExpansionProfile {
         login_scene: "MainMenu",
         logo: "Interface\\Glues\\Common\\Glues-WoW-Logo",
     },
+    dbc: dbc::CLASSIC,
+    // Human through Troll; Goblin (9) and above are not creatable.
+    playable_races: &[1, 2, 3, 4, 5, 6, 7, 8],
+    // `0x477520` disables 0..=1700 (`0x6a4`) before enabling its picks.
+    character_geosets_through: 1700,
 };
 
 /// 3.3.5a, when `Data\common.MPQ` exists (`0x402b90`; without it the client falls back to the
@@ -189,6 +233,19 @@ static WOTLK: ExpansionProfile = ExpansionProfile {
     expansion: Expansion::Wotlk,
     version: "3.3.5a",
     build: 12340,
+    // `H`: AzerothCore's `build_info` row for 12340 (`db_auth/build_info.sql`).
+    logon: LogonFacts {
+        protocol_version: 8,
+        version: [3, 3, 5],
+        integrity_windows: [
+            0xcd, 0xcb, 0xbd, 0x51, 0x88, 0x31, 0x5e, 0x6b, 0x4d, 0x19, 0x44, 0x9d, 0x49, 0x2d,
+            0xbc, 0xfa, 0xf1, 0x56, 0xa3, 0x47,
+        ],
+        integrity_macos: [
+            0xb7, 0x06, 0xd1, 0x3f, 0xf2, 0xf4, 0x01, 0x88, 0x39, 0x72, 0x94, 0x61, 0xe3, 0xf8,
+            0xa0, 0xe2, 0xb5, 0xfd, 0xc0, 0x34,
+        ],
+    },
     archives: ArchiveLayout {
         base: &[
             optional("{locale}/lichking-speech-{locale}.MPQ"),
@@ -214,6 +271,12 @@ static WOTLK: ExpansionProfile = ExpansionProfile {
         login_scene: "MainMenu_Northrend",
         logo: "Interface\\Glues\\Common\\Glues-WoW-WotLKLogo",
     },
+    dbc: dbc::WOTLK,
+    // 1.12.1's eight, Blood Elf and Draenei; the shipped `CharBaseInfo` lists exactly these.
+    playable_races: &[1, 2, 3, 4, 5, 6, 7, 8, 10, 11],
+    // Groups 17 (eye glow) and 18 (belt) join the selection; WowUnreal's 3.3.5a builder defaults
+    // both to variant 1 and picks 18 from the belt.
+    character_geosets_through: 1899,
 };
 
 #[cfg(test)]
@@ -263,6 +326,21 @@ mod tests {
         assert_eq!((CLASSIC.version, CLASSIC.build), ("1.12.1", 5875));
         assert_eq!((WOTLK.version, WOTLK.build), ("3.3.5a", 12340));
         assert_eq!(Expansion::Wotlk.to_string(), "3.3.5a (12340)");
+    }
+
+    #[test]
+    fn each_client_names_its_own_version_to_realmd() {
+        assert_eq!(
+            (CLASSIC.logon.protocol_version, CLASSIC.logon.version),
+            (3, [1, 12, 1])
+        );
+        assert_eq!(
+            (WOTLK.logon.protocol_version, WOTLK.logon.version),
+            (8, [3, 3, 5])
+        );
+        assert_eq!(CLASSIC.logon.integrity_windows[..2], [0x95, 0xed]);
+        assert_eq!(WOTLK.logon.integrity_windows[..2], [0xcd, 0xcb]);
+        assert_eq!(WOTLK.logon.integrity_macos[18..], [0xc0, 0x34]);
     }
 
     #[test]
