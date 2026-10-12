@@ -246,6 +246,8 @@ pub(crate) struct Model {
     pub(crate) unit_auras: HashMap<u64, Vec<AuraState>>,
     /// The unit-token resolver's inputs (`0x515970`), which the aura bindings resolve through.
     pub(crate) unit_guids: super::UnitGuids,
+    /// Each unit's running cast and channel, for `UnitCastingInfo` and `UnitChannelInfo`.
+    pub(crate) unit_casts: super::unit_cast::UnitCasts,
     /// Spell ids the cancel verbs queued (`CancelPlayerBuff`, `CancelTrackingBuff`, …), one
     /// `CMSG_CANCEL_AURA` each.
     pub(crate) cancel_aura_requests: Vec<u32>,
@@ -426,6 +428,8 @@ pub(crate) struct Model {
     /// Per action, its usable, range, current and cooldown state; an absent one reads cold.
     pub(crate) action_states: HashMap<u32, super::action::StoredActionState>,
     pub(crate) bonus_bar_offset: u8,
+    /// The main bar's page, 0-based (`[0xc1e598]`): `GetActionBarPage` answers it plus one.
+    pub(crate) action_bar_page: u8,
     /// `(action id, packed)` per slot `PickupAction`/`PlaceAction` changed, 0 clearing it: one
     /// `CMSG_SET_ACTION_BUTTON` each, so a drag swap is two sends.
     pub(crate) action_sets: Vec<(u32, u32)>,
@@ -959,6 +963,15 @@ pub(crate) struct Model {
     pub(crate) framerate: f64,
     /// `(shift, ctrl, alt)` for `Is*KeyDown`, pushed before the frame's mouse events.
     pub(crate) modifiers: (bool, bool, bool),
+    /// The `<ModifiedClick>` table, `(action, binding)` in registration order.
+    pub(crate) modified_clicks: Vec<(String, String)>,
+    /// The button of the click whose `PreClick`/`OnClick`/`PostClick` is running, which a
+    /// button-qualified modified click compares (`[0xb499a8]+0x1234`).
+    pub(crate) click_button: Option<String>,
+    /// The player state `SecureCmdOptionParse`'s conditions read beside the unit snapshots.
+    pub(crate) option_state: super::OptionState,
+    /// Condition names `SecureCmdOptionParse` did not know, for `ERR_UNKNOWN_MACRO_OPTION_S`.
+    pub(crate) unknown_macro_options: Vec<String>,
 }
 
 impl Model {
@@ -1109,6 +1122,7 @@ impl Model {
             player_auras: Vec::new(),
             unit_auras: HashMap::new(),
             unit_guids: Default::default(),
+            unit_casts: Default::default(),
             cancel_aura_requests: Vec::new(),
             tracking: None,
             script_calls: Vec::new(),
@@ -1192,6 +1206,7 @@ impl Model {
             actions: HashMap::new(),
             action_states: HashMap::new(),
             bonus_bar_offset: 0,
+            action_bar_page: 0,
             action_sets: Vec::new(),
             ui_errors: Vec::new(),
             spellbook: spellbook::SpellBookState::default(),
@@ -1416,6 +1431,10 @@ impl Model {
             summon_confirms: 0,
             framerate: 0.0,
             modifiers: (false, false, false),
+            modified_clicks: Vec::new(),
+            click_button: None,
+            option_state: Default::default(),
+            unknown_macro_options: Vec::new(),
             money: 0,
             net_latency_ms: 0,
             player_xp: 0,

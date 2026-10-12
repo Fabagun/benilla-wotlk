@@ -97,10 +97,13 @@ mod messageframe;
 mod minimap;
 pub mod nameplate;
 pub use nameplate::{PlateBitWrites, PlateGeometry, PlateState, PLATE_BIT_ENEMY, PLATE_BIT_FRIEND};
+mod macro_options;
 mod model;
 mod modelframe;
+mod modified_click;
 mod net_stats;
 pub(crate) mod object;
+mod unit_cast;
 pub use object::frame_kind_from_tag;
 mod party;
 mod pet;
@@ -164,7 +167,7 @@ pub use battlefield_positions::{BattlefieldFlagView, BattlefieldPositionView};
 pub use battlefield_queue::{BattlefieldListView, BattlefieldMapInfo, BattlefieldQueueSlot};
 pub use battlefield_score::{BattlefieldScoreRow, BattlefieldScores, BattlefieldStatColumn};
 pub use bind_confirm::PendingEquipAnswer;
-pub use calls::{NearestMode, ScriptCall};
+pub use calls::{CastAt, NearestMode, ScriptCall};
 pub use camera_view::{CameraViewRequest, CAMERA_VIEW_COUNT};
 pub use channel::{ChannelCommand, ZoneChannelRow};
 pub use char_stats::{
@@ -202,6 +205,7 @@ pub use guild::{
     MAX_RANKS, MIN_RANKS, RANK_RIGHT_BITS,
 };
 pub use input_verbs::{BindingInput, FiredInput, HeldInput};
+pub use macro_options::OptionState;
 pub use modelframe::ModelPaneFrame;
 pub use petition::{
     validate_guild_name, PetitionRecordView, PetitionRequest, PetitionState, PETITION_TYPE_CHARTER,
@@ -211,6 +215,7 @@ pub use tabard::{
     emblem_mask_path, TabardHost, TabardIntent, EMBLEM_MASK_TOKEN, TABARD_COUNTS,
     TABARD_CREATION_COST,
 };
+pub use unit_cast::UnitCast;
 pub use video_pairs::VIDEO_PAIR_CVARS;
 pub use worldmap_arrow::ARROW_MODEL;
 
@@ -405,7 +410,7 @@ pub const SCREEN: crate::layout::Handle = 0;
 /// ScrollFrame's three scroll kinds are `+0x32c`/`+0x334`/`+0x33c` (script-name map `0x786c40`).
 /// The EditBox's vtable (`0x81c910`) replaces the key and char slots: an EditBox never fires
 /// `OnKeyDown`, and fires `OnChar` only from `Insert`, with the inserted text (`0x77c13c`).
-const SCRIPT_KINDS: [&str; 41] = [
+const SCRIPT_KINDS: [&str; 43] = [
     "OnLoad",
     "OnEvent",
     "OnUpdate",
@@ -415,7 +420,9 @@ const SCRIPT_KINDS: [&str; 41] = [
     "OnAnimFinished",
     "OnShow",
     "OnHide",
+    "PreClick",
     "OnClick",
+    "PostClick",
     "OnEnter",
     "OnLeave",
     "OnMouseDown",
@@ -546,6 +553,9 @@ impl UiScript {
         nameplate::install_verbs(&lua)?;
         saved::install(&lua)?;
         keybind::install(&lua)?;
+        modified_click::install(&lua)?;
+        unit_cast::install(&lua)?;
+        macro_options::install(&lua)?;
         sound::install(&lua)?;
         ui_errors::install(&lua)?;
         pointer::install(&lua)?;

@@ -75,9 +75,9 @@ pub(crate) struct HeldForPick(Option<HeldCast>);
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct HeldCast {
     pub(crate) spell_id: u32,
-    /// Pressed with the self-cast modifier: TryCast's guid argument is then the caster
-    /// (`0x4e610e`), which the pick tries before the selection.
-    pub(crate) on_self: bool,
+    /// TryCast's guid argument, the verb's explicit unit, which the pick tries before the
+    /// selection.
+    pub(crate) passed: Option<u64>,
 }
 
 /// Everything the cast-send path reads, as one [`SystemParam`]: [`CastLadder::send`] is the only
@@ -176,6 +176,13 @@ impl CastLadder<'_, '_> {
                 },
             },
         };
+        if !commit.is_item() {
+            let target = match bound {
+                TargetedBind::Unit(guid) => Some(guid),
+                _ => None,
+            };
+            crate::ui_cast::queue_sent(&mut self.ecs, spell_id, target);
+        }
         let _ = self.commands.0.send(cmd);
         let now = Instant::now();
         if commit.is_item() {
@@ -223,9 +230,9 @@ impl CastLadder<'_, '_> {
         &mut self,
         spell_id: u32,
         ctx: &cast_target::CastContext,
-        on_self: bool,
+        passed: Option<u64>,
     ) {
-        let held = HeldCast { spell_id, on_self };
+        let held = HeldCast { spell_id, passed };
         self.send_bound(spell_id, ctx, CastCommit::Spell, None, Some(held));
     }
 
@@ -695,6 +702,9 @@ fn send_spell_cast(
                 crate::creature_anim::stop_attack_local(engaged, queued_melee, commands);
             }
         }
+    }
+    if matches!(commit, CastCommit::Spell) {
+        crate::ui_cast::queue_sent(ecs, spell_id, target);
     }
     // `SendCast 0x6e54f0`: one targets block, two opcodes.
     let _ = commands.0.send(match commit {
@@ -1170,7 +1180,7 @@ mod tests {
         let press = |world: &mut World, spell_id: u32| {
             world
                 .run_system_once(move |mut ladder: CastLadder| {
-                    ladder.send_spell(spell_id, &ctx(), false);
+                    ladder.send_spell(spell_id, &ctx(), None);
                     ladder.take_held()
                 })
                 .expect("the ladder runs as a one-shot system")
@@ -1180,7 +1190,7 @@ mod tests {
             press(&mut world, RAPTOR_STRIKE),
             Some(HeldCast {
                 spell_id: RAPTOR_STRIKE,
-                on_self: false
+                passed: None
             })
         );
         assert!(rx.try_recv().is_err(), "a held press sends nothing");
@@ -1207,7 +1217,7 @@ mod tests {
             .arm(SERPENT_STING, Instant::now(), true);
         let held = world
             .run_system_once(|mut ladder: CastLadder| {
-                ladder.send_spell(RAPTOR_STRIKE, &ctx(), false);
+                ladder.send_spell(RAPTOR_STRIKE, &ctx(), None);
                 ladder.take_held()
             })
             .expect("the ladder runs as a one-shot system");
@@ -1232,7 +1242,7 @@ mod tests {
                         },
                         ..ctx()
                     };
-                    ladder.send_spell(EVISCERATE, &ctx, false);
+                    ladder.send_spell(EVISCERATE, &ctx, None);
                     ladder.take_held()
                 })
                 .expect("the ladder runs as a one-shot system");
