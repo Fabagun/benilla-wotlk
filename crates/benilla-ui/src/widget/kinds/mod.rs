@@ -4,8 +4,10 @@ use std::collections::{HashSet, VecDeque};
 
 use super::{FrameHandle, RegionHandle};
 
+mod cooldown;
 mod editbox;
 mod messageframe;
+pub use cooldown::*;
 pub use editbox::*;
 pub use messageframe::*;
 
@@ -47,6 +49,8 @@ pub enum FrameKind {
     GameTooltip,
     /// The `<Minimap>` widget, a game-layer factory (`0x495940`) the app draws the map into.
     Minimap,
+    /// The `Cooldown` widget (factory `0x51a380`): a `Frame` that paints its own sweep.
+    Cooldown,
 }
 
 /// The kind of a [`Region`] leaf, the client's `CScriptRegion`-derived non-frame objects.
@@ -90,6 +94,8 @@ pub enum KindState {
     Minimap(MinimapState),
     /// The `GameTooltip` line stack, owner and fade.
     Tooltip(TooltipState),
+    /// A `Cooldown`'s sweep clock and switches.
+    Cooldown(CooldownState),
 }
 
 impl KindState {
@@ -885,6 +891,8 @@ pub struct StatusBarState {
     pub min: f32,
     /// `SetMinMaxValues` high bound (XML `maxValue`).
     pub max: f32,
+    /// `+0x29c & 2`: a range was set, so a repeat of it fires no `OnMinMaxChanged` (`0x96181f`).
+    pub range_set: bool,
     /// The current value (`SetValue`/XML `defaultValue`), clamped into `[min, max]`.
     pub value: f32,
     /// VERTICAL fills bottom-up; HORIZONTAL, the default, left to right (enum `0x811b00`).

@@ -48,7 +48,7 @@ pub(crate) fn decode_id(this: &Table) -> mlua::Result<u32> {
 }
 
 /// Resolve `self` (a frame wrapper) to its live [`FrameHandle`].
-pub(super) fn frame_handle_of(lua: &Lua, this: &Table) -> mlua::Result<FrameHandle> {
+pub(crate) fn frame_handle_of(lua: &Lua, this: &Table) -> mlua::Result<FrameHandle> {
     let id = decode_id(this)?;
     let model = lua.app_data_ref::<Model>().expect("model app_data");
     model
@@ -64,7 +64,7 @@ pub(super) fn frame_handle_of(lua: &Lua, this: &Table) -> mlua::Result<FrameHand
 
 /// The wrapper table for a frame id, created and cached on first use and published to `_G` under
 /// the frame's name if that global is free. Call it with no model borrow alive.
-pub(super) fn frame_wrapper(lua: &Lua, id: u32) -> mlua::Result<Table> {
+pub(crate) fn frame_wrapper(lua: &Lua, id: u32) -> mlua::Result<Table> {
     let wrappers: Table = lua.named_registry_value(REG_WRAPPERS)?;
     if let Value::Table(t) = wrappers.get::<Value>(id)? {
         return Ok(t);
@@ -300,6 +300,8 @@ fn frame_kind_from_str(s: &str) -> Option<FrameKind> {
         "MOVIEFRAME" => FrameKind::MovieFrame,
         "GAMETOOLTIP" => FrameKind::GameTooltip,
         "MINIMAP" => FrameKind::Minimap,
+        // Registered at `0x521069`, factory `0x51a380`.
+        "COOLDOWN" => FrameKind::Cooldown,
         _ => return None,
     })
 }
@@ -508,6 +510,8 @@ fn kind_method_registries(kind: Option<FrameKind>) -> &'static [&'static str] {
         ],
         Some(FrameKind::Minimap) => &[super::minimap::REG_MINIMAP_METHODS],
         Some(FrameKind::GameTooltip) => &[super::tooltip::REG_TOOLTIP_METHODS],
+        // Its five (`0xad13a4`, `0x5ebe10`) over the frame table.
+        Some(FrameKind::Cooldown) => &[super::cooldown_widget::REG_COOLDOWN_METHODS],
         _ => &[],
     }
 }
