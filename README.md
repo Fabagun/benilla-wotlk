@@ -20,8 +20,8 @@ client code or bundled game data is included.
 > The 3.3.5a port is in progress. The client can authenticate, enter the world, and run the stock
 > 3.3.5a interface, but parts of the data and gameplay layers still use 1.12.1 layouts or behavior.
 
-Other client versions and Warden anticheat support are not planned. Use a 3.3.5a server with
-Warden disabled.
+Other client versions are not planned. Warden will come later. Use a 3.3.5a server with
+Warden disabled for now.
 
 ## Highlights
 
