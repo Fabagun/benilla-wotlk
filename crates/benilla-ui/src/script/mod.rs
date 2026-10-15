@@ -156,6 +156,7 @@ mod merchant;
 mod messageframe;
 mod minimap;
 pub mod nameplate;
+mod quest_poi_frame;
 pub use nameplate::{PlateBitWrites, PlateGeometry, PlateState, PLATE_BIT_ENEMY, PLATE_BIT_FRIEND};
 mod macro_options;
 
@@ -302,7 +303,7 @@ pub use mail::{
 pub use measure::TextMeasure;
 pub use merchant::{ItemStatsHead, MerchantItem, MerchantState, RepairCosts};
 pub(crate) use minimap::apply_model_attrs as apply_minimap_model_attrs;
-pub use model::{FontProbe, MacroIconSource, TextureProbe, TextureSizeProbe, WorldLocProjector};
+pub use model::{FontProbe, MacroIconSource, TextureProbe, TextureSizeProbe};
 pub(crate) use model::{Model, ModelCell};
 pub use multicast::MultiCastView;
 pub use party::{PartyMemberInfo, PartyRequest, PartyState, RaidMemberInfo, SavedInstanceInfo};
@@ -354,8 +355,9 @@ pub use unit::{
 pub use weapon_enchant::WeaponEnchant;
 pub use who_sort::{WhoSortChain, WhoSortKey};
 pub use worldmap::{
-    WorldMapContinentView, WorldMapLandmarkView, WorldMapOverlayView, WorldMapState,
-    WorldMapZoneView,
+    WorldMapCatalog, WorldMapContinentView, WorldMapDungeonView, WorldMapExploreGate, WorldMapFeed,
+    WorldMapOverlayView, WorldMapPlayer, WorldMapPoiView, WorldMapPoint, WorldMapSelection,
+    WorldMapSheet, WorldMapState, WorldMapTransformView, WorldMapZoneView,
 };
 pub use worldstate::WorldStateUiView;
 pub use worn_display::WornDisplay;
@@ -422,7 +424,7 @@ pub(crate) const TEXTURE_ONLY_METHODS: [&str; 12] = [
 /// FontString-only: the font, text, justify and shadow block and the string metrics.
 /// `GetStringHeight`, `SetFormattedText` and `SetSize` are not 1.12 FontString methods; 3.3.5a's
 /// `SetFormattedText` goes into the leaf alone (`region::text::install_formatted`).
-pub(crate) const FONTSTRING_ONLY_METHODS: [&str; 21] = [
+pub(crate) const FONTSTRING_ONLY_METHODS: [&str; 23] = [
     "SetFont",
     "GetFont",
     "SetFontObject",
@@ -444,6 +446,8 @@ pub(crate) const FONTSTRING_ONLY_METHODS: [&str; 21] = [
     "SetNonSpaceWrap",
     "CanNonSpaceWrap",
     "SetAlphaGradient",
+    "SetSpacing",
+    "GetSpacing",
 ];
 
 /// The Region method map (`0xcf54b4`): the 19 names every region leaf reaches on a miss.
@@ -908,6 +912,7 @@ impl UiScript {
         colorselect::install(&lua)?;
         minimap::install(&lua)?;
         cooldown_widget::install(&lua)?;
+        quest_poi_frame::install(&lua)?;
         modelframe::install(&lua)?;
         tooltip::install(&lua)?;
         worldmap::install(&lua)?;
@@ -1514,6 +1519,7 @@ impl UiScript {
                 crate::widget::FrameKind::GameTooltip => "GameTooltip",
                 crate::widget::FrameKind::Minimap => "Minimap",
                 crate::widget::FrameKind::Cooldown => "Cooldown",
+                crate::widget::FrameKind::QuestPoiFrame => "QuestPOIFrame",
             });
         }
         // Region leaves publish into their own name table, not the arena's.

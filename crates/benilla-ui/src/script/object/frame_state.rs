@@ -115,6 +115,8 @@ pub(super) fn install(lua: &Lua, m: &Table) -> mlua::Result<()> {
             FrameKind::Minimap => &["Minimap", "Frame", "Region"],
             // `IsObjectType` (`0x5ebe70`) answers its own id, then the frame chain's.
             FrameKind::Cooldown => &["Cooldown", "Frame", "Region"],
+            // `IsObjectType` (`0x58fb00`) answers its own name, then the frame chain's.
+            FrameKind::QuestPoiFrame => &["QuestPOIFrame", "Frame", "Region"],
         }
     }
     fn chain_of(lua: &Lua, this: &Table) -> mlua::Result<&'static [&'static str]> {
@@ -413,11 +415,11 @@ pub(super) fn install(lua: &Lua, m: &Table) -> mlua::Result<()> {
         lua.create_function(|lua, (this, level): (Table, i64)| {
             let h = frame_handle_of(lua, &this)?;
             let lvl = level.clamp(0, i64::from(u16::MAX)) as u16;
-            // A script level change moves no children: `0x774560` calls `set_frame_level 0x76a4f0`
-            // with `propagate = 0`, which stock `BonusActionButtonTemplate` relies on.
+            // A script level change carries the same-strata children along: `0x49e9d0` calls
+            // `CSimpleFrame::SetFrameLevel` with `propagate = 1` (`0x49ea50`).
             crate::script::model_mut_of(lua)
                 .arena
-                .set_frame_level(h, lvl, false);
+                .set_frame_level(h, lvl, true);
             Ok(())
         })?,
     )?;
@@ -739,6 +741,51 @@ pub(super) fn install(lua: &Lua, m: &Table) -> mlua::Result<()> {
                 .expect("model");
             Ok(crate::script::binding_abi::flag(
                 model.arena.is_clamped_to_screen(h),
+            ))
+        })?,
+    )?;
+    // SetClampRectInsets(left, right, top, bottom) (`0x4a0310`): four numbers, else the named
+    // Usage (`0x9ecf00`); the clamp lets the frame that far past each screen edge (`0x48944e`).
+    m.set(
+        "SetClampRectInsets",
+        lua.create_function(
+            |lua, (this, left, right, top, bottom): (Table, Value, Value, Value, Value)| {
+                let num = |v: Value| lua.coerce_number(v).ok().flatten();
+                let (Some(l), Some(r), Some(t), Some(b)) =
+                    (num(left), num(right), num(top), num(bottom))
+                else {
+                    let who: Option<String> =
+                        this.get::<mlua::Function>("GetName")?.call(this.clone())?;
+                    return Err(mlua::Error::runtime(format!(
+                        "Usage: {}:SetClampRectInsets(left, right, top, bottom)",
+                        who.as_deref().unwrap_or(super::anchor_args::UNNAMED)
+                    )));
+                };
+                let h = frame_handle_of(lua, &this)?;
+                let mut model = crate::script::model_mut_of(lua);
+                let insets = [l as f32, r as f32, t as f32, b as f32];
+                if model.arena.clamp_rect_insets(h) != insets {
+                    model.arena.set_clamp_rect_insets(h, insets);
+                    model.touch_layout();
+                }
+                Ok(())
+            },
+        )?,
+    )?;
+    // GetClampRectInsets() → left, right, top, bottom (`0x4a0230`).
+    m.set(
+        "GetClampRectInsets",
+        lua.create_function(|lua, this: Table| {
+            let h = frame_handle_of(lua, &this)?;
+            let model = lua
+                .app_data_ref::<crate::script::ModelCell>()
+                .expect("model");
+            let i = model.arena.clamp_rect_insets(h);
+            Ok((
+                f64::from(i[0]),
+                f64::from(i[1]),
+                f64::from(i[2]),
+                f64::from(i[3]),
             ))
         })?,
     )?;
