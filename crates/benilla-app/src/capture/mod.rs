@@ -47,6 +47,8 @@ use benilla_world::view::WorldCamera;
 
 mod depth_probe;
 mod fixtures;
+mod glue_create;
+mod glue_press;
 mod live_shot;
 mod phase_probe;
 mod pick_probe;
@@ -77,6 +79,7 @@ mod probe_taxi;
 mod probe_vendor_swap;
 mod probes;
 mod realm_list;
+mod realm_walk;
 mod scenarios;
 use crate::run_mode::CaptureMode;
 pub(crate) use depth_probe::DepthProbePlugin;
@@ -115,31 +118,7 @@ pub(crate) use probes::{
     ProbeGlueLuaPlugin, ProbeHoverPlugin, ProbeKeyPlugin, ProbeLuaPlugin, ProbeResizePlugin,
     RevealAuditPlugin, SchedCensusPlugin, StallPlugin, TrailCensusPlugin, UnitVisualsPlugin,
 };
-/// A probe that reads the native screens' rosters (the park's own, and the one re-sent after a
-/// create or delete) cannot run under `WOW_GLUE_STOCK=1`, where the screen asks for its own and the
-/// probe would sit until its timeout. Refuse it where it is requested: an error at plugin build,
-/// and the exit of a driverless run ([`crate::run_mode::fatal_when_driverless`]), at the first
-/// frame. `true` means the probe must not install.
-pub(crate) fn refuse_under_stock(app: &mut App, probe: &'static str) -> bool {
-    refuse_if_stock(app, probe, crate::ui_script::glue::GlueStock::from_env().0)
-}
-
-fn refuse_if_stock(app: &mut App, probe: &'static str, stock: bool) -> bool {
-    if !stock {
-        return false;
-    }
-    error!(
-        "probe: {probe} reads the native screens' rosters and cannot run under WOW_GLUE_STOCK=1; \
-         unset one of them"
-    );
-    if crate::run_mode::fatal_when_driverless(&format!("{probe} under WOW_GLUE_STOCK=1")) {
-        app.add_systems(Startup, |mut exit: MessageWriter<AppExit>| {
-            exit.write(AppExit::error());
-        });
-    }
-    true
-}
-
+pub(crate) use realm_walk::RealmWalkPlugin;
 pub(crate) use scenarios::ui_opted_in;
 use scenarios::GlueScreen;
 use scenarios::{Scenario, SubjectKind, UiFixture, GLUE_SCENARIOS, GROUND_EYE, SCENARIOS};
@@ -157,14 +136,14 @@ pub(crate) use probe_look::ProbeLookPlugin;
 pub(crate) use probe_pitch::ProbePitchPlugin;
 
 /// The screen a capture starts on, the dev arm of [`crate::run_mode::start_state`]: a glue capture
-/// boots onto its screen, any other capture straight in-world, no capture the login screen.
+/// boots onto the login screen and presses its way to its own, any other capture straight
+/// in-world, no capture the login screen.
 ///
 /// One of three readers of `$WOW_CAPTURE`, with `run_mode` and `dev_state::deterministic_run`,
 /// one per layer and sharing no symbol: keep them in step.
 pub(crate) fn start_state() -> crate::char_select::ClientState {
     match glue_screen() {
-        Some(GlueScreen::CharCreate) => crate::char_select::ClientState::CharCreate,
-        Some(GlueScreen::Login | GlueScreen::RealmList) => crate::char_select::ClientState::Login,
+        Some(_) => crate::char_select::ClientState::Login,
         None if crate::run_mode::scenario_active() => crate::char_select::ClientState::InWorld,
         None => crate::char_select::ClientState::Login,
     }
@@ -442,15 +421,6 @@ impl Plugin for CapturePlugin {
         let name = std::env::var("WOW_CAPTURE").unwrap_or_default();
         // A glue capture has no map, viewpoint or fixture; only the shutter is shared.
         let glue = GLUE_SCENARIOS.iter().find(|g| g.name == name).copied();
-        if let Some(g) = glue {
-            // The preview pick rides `WOW_CHARCREATE_PICK`, and a pick already in the environment
-            // wins, so one scenario photographs every race's stage.
-            if let Some((race, sex, class)) = g.pick {
-                if std::env::var_os("WOW_CHARCREATE_PICK").is_none() {
-                    std::env::set_var("WOW_CHARCREATE_PICK", format!("{race},{sex},{class}"));
-                }
-            }
-        }
         // `fxview`, `waterfx`, `vista` and `name-close` are built from knobs, not the tables, and
         // are never in the golden sweep.
         let scenario: Option<Scenario> = if glue.is_some() {
@@ -699,7 +669,10 @@ impl Plugin for CapturePlugin {
             // Before `UnitFeed`: the seed stands in for wire data live play delivers on earlier
             // frames, so the same frame's feeds and the one-shot `MERCHANT_SHOW` paint must see it.
             .add_systems(Update, seed_ui_fixture.before(crate::ui_unit::UnitFeed))
-            .add_systems(Update, realm_list::seed_realm_list)
+            .add_systems(
+                Update,
+                (realm_list::seed_realm_list, glue_create::seed_char_create),
+            )
             .add_systems(Last, drive_capture);
     }
 }
@@ -1073,18 +1046,5 @@ fn drive_capture(
             (true, false) => clock.pause(),
             _ => {}
         }
-    }
-}
-
-#[cfg(test)]
-mod refuse_tests {
-    use super::*;
-
-    /// A native-only probe installs under the native screens and is refused under the stock ones.
-    #[test]
-    fn a_native_only_probe_is_refused_under_the_stock_screens() {
-        let mut app = App::new();
-        assert!(!refuse_if_stock(&mut app, "WOW_RIG", false));
-        assert!(refuse_if_stock(&mut app, "WOW_RIG", true));
     }
 }

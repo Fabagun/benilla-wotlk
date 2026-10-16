@@ -1,5 +1,5 @@
 //! The UI session's lifecycle, all edges and nothing per-frame: `Startup` installs a boot VM
-//! (strings and emote tokens), or the stock glue screens' VM under `WOW_GLUE_STOCK=1`; world entry
+//! (strings and emote tokens), or the stock glue screens' VM; world entry
 //! builds a fresh VM and loads the in-game UI and every addon onto it; leaving the world runs the
 //! reference's shutdown tail and installs the glue-side VM again; `ReloadUI()` is the two edges
 //! back to back without leaving the world.
@@ -17,25 +17,17 @@ pub(crate) fn setup_script(world: &mut World) {
     install_glue_side_vm(world, super::glue::GlueScreen::Login);
 }
 
-/// Install the VM the world holds outside the world: the stock glue screens' under
-/// [`super::glue::GlueStock`], put up on `screen`, else a boot VM.
+/// Install the VM the world holds outside the world: the stock glue screens', put up on `screen`,
+/// else a boot VM.
 ///
 /// The IO thread's roster policy follows the VM that is up: the screen asks for its roster only
 /// when the stock glue VM was built and its character select screen loaded, so a run whose stock VM failed to build (logged as an error
 /// by [`new_vm`]) falls back to the park's own enumeration instead of waiting on a screen that
 /// never asks.
 fn install_glue_side_vm(world: &mut World, screen: super::glue::GlueScreen) {
-    let stock_asked = world
-        .get_resource::<super::glue::GlueStock>()
-        .is_some_and(|s| s.0);
-    let stock_up = if stock_asked {
-        install_glue_vm(world, screen)
-    } else {
-        install_boot_vm(world);
-        false
-    };
-    if stock_asked && !stock_up {
-        error!("ui_script: WOW_GLUE_STOCK=1 but the stock glue VM did not come up with its character select screen; the roster is fetched at the park");
+    let stock_up = install_glue_vm(world, screen);
+    if !stock_up {
+        error!("ui_script: the stock glue VM did not come up with its character select screen; the roster is fetched at the park");
     }
     if let Some(policy) = world.get_resource::<crate::net::RosterPolicy>() {
         policy
@@ -48,7 +40,7 @@ fn install_glue_side_vm(world: &mut World, screen: super::glue::GlueScreen) {
 /// strings the feeds resolve lines from and the emote tokens `/`-commands are built from
 /// (`ui_chat::commands`), no frames and no font objects. Installed at `Startup` and at every
 /// [`end_ui_session`], unless the stock glue screens stand there instead ([`install_glue_vm`]).
-fn install_boot_vm(world: &mut World) {
+pub(crate) fn install_boot_vm(world: &mut World) {
     if let Some(script) = strings_vm(world) {
         world.insert_non_send_resource(script);
     }
@@ -1076,21 +1068,17 @@ mod tests {
     #[test]
     fn the_roster_policy_follows_the_vm_that_stands() {
         use std::sync::atomic::Ordering;
-        for stock in [true, false] {
-            let mut world = World::new();
-            let policy = crate::net::RosterPolicy(Default::default());
-            policy.0.store(!stock, Ordering::SeqCst);
-            world.insert_resource(policy.clone());
-            world.insert_resource(super::super::glue::GlueStock(stock));
-            world.insert_resource(State::new(crate::char_select::ClientState::Login));
-            setup_script(&mut world);
-            // The stock policy needs the stock files to have loaded: no install, no screen.
-            let up = stock && benilla_formats::wow_data().is_some();
-            assert_eq!(policy.0.load(Ordering::SeqCst), up, "stock {stock}");
-        }
+        let mut world = World::new();
+        let policy = crate::net::RosterPolicy(Default::default());
+        world.insert_resource(policy.clone());
+        world.insert_resource(State::new(crate::char_select::ClientState::Login));
+        setup_script(&mut world);
+        // The stock policy needs the stock files to have loaded: no install, no screen.
+        let up = benilla_formats::wow_data().is_some();
+        assert_eq!(policy.0.load(Ordering::SeqCst), up);
     }
 
-    /// Under `WOW_GLUE_STOCK=1` the world holds the glue VM where it holds a boot VM, at startup
+    /// Under the stock glue screens the world holds the glue VM where it holds a boot VM, at startup
     /// on the login screen (`0x402b65`) and back from the world on the screen the exit enters
     /// (`0x402090`); a `ReloadUI()` never builds the glue.
     #[test]
@@ -1105,7 +1093,6 @@ mod tests {
                     .unwrap()
         };
         let mut world = World::new();
-        world.insert_resource(super::super::glue::GlueStock(true));
         world.insert_resource(State::new(ClientState::Login));
         setup_script(&mut world);
         assert_eq!(
