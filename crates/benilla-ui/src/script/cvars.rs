@@ -434,6 +434,38 @@ pub(super) fn install(lua: &Lua) -> mlua::Result<()> {
         })?,
     )?;
 
+    install_cvar_verbs(lua)?;
+    // ── RestoreVideoDefaults ─────────────────────────────────────────────────────────────────
+    // The Defaults button's whole effect: `OptionsFrame_SetDefaults` only sets the widgets, which
+    // the button's `OnClick` then hides without `_Save` (`OptionsFrame.xml:688-690`). Ends with a
+    // restart, as the reference calls the `gxRestart` handler between its two passes (`0x639a51`).
+    lua.globals().set(
+        "RestoreVideoDefaults",
+        lua.create_function(|lua, ()| {
+            let mut model = crate::script::model_mut_of(lua);
+            for name in VIDEO_DEFAULT_CVARS {
+                let Some(default) = model
+                    .cvars
+                    .get(&name.to_ascii_lowercase())
+                    .map(|slot| slot.default.clone())
+                else {
+                    // Unregistered in a bare VM: nothing to restore, nothing to warn about.
+                    continue;
+                };
+                set_from_engine(&mut model, name, default);
+            }
+            model.restart_gx_asks += 1;
+            Ok(())
+        })?,
+    )?;
+
+    install_world_detail_verbs(lua)?;
+    super::video_pairs::install(lua)
+}
+
+/// The CVar verbs both states register, each a binding of its own (glue table `0xac3e00`, in-game
+/// `0xac80b0`) with the same behaviour: `GetCVar`, `GetCVarDefault`, `GetCVarBool` and `SetCVar`.
+pub(super) fn install_cvar_verbs(lua: &Lua) -> mlua::Result<()> {
     lua.globals().set(
         "GetCVar",
         lua.create_function(|lua, name: String| {
@@ -483,6 +515,54 @@ pub(super) fn install(lua: &Lua) -> mlua::Result<()> {
             })
         })?,
     )?;
+    // `SetCVar(name, value [, token])` (`0x488c10`).
+    lua.globals().set(
+        "SetCVar",
+        lua.create_function(|lua, args: mlua::MultiValue| {
+            // `lua_isstring(1)` (`0x488c1a`): a string or a number names it.
+            let Some(name) = cvar_arg(args.front()) else {
+                return Err(mlua::Error::runtime(USAGE_SET_CVAR));
+            };
+            // A value with no string form stores "0" (`0x488c8d`-`0x488c98`): an unchecked
+            // CheckButton's `GetChecked()` is nil, and `SoundOptionsCheckButton_OnClick` writes
+            // it as is.
+            let value = cvar_arg(args.get(1)).unwrap_or_else(|| NO_STRING_FORM.to_string());
+            {
+                let mut model = crate::script::model_mut_of(lua);
+                // Flag bit2 (`0x488c67`), tested before anything is written.
+                if model.cvars_read_only.contains(&name.to_ascii_lowercase()) {
+                    return Err(mlua::Error::runtime(format!("\"{name}\" is read-only")));
+                }
+                if !write_cvar(&mut model, &name, value.clone()) {
+                    return Ok(());
+                }
+            }
+            // A third argument that passes `lua_isstring` is the `CVAR_UPDATE` token, arg1, with
+            // the value as arg2 (`0x488cad`-`0x488cd5`), fired on every such call, changed or not,
+            // and inside it: `SignalEvent2` (`0x703f50`) walks the listeners in place. The 1.12
+            // options panels pass their CheckButtons key, such as "STATUS_BAR_TEXT"
+            // (`UIOptionsFrame.lua` l.335), which is how `UIOptionsFrame_OnEvent` finds its row.
+            if let Some(token) = cvar_arg(args.get(2)) {
+                super::tick::fire_event_into(
+                    lua,
+                    "CVAR_UPDATE",
+                    vec![ScriptValue::Str(token), ScriptValue::Str(value)],
+                );
+            }
+            Ok(())
+        })?,
+    )?;
+    Ok(())
+}
+
+/// The video options table both states register (`CGVideoOptions::RegisterScriptFunctions`,
+/// `0x54ec00`, table `0xacd320`; the glue manager's `Resume` `0x4da5f0` calls it too), with
+/// `RestartGx`, which both states' own tables carry.
+pub(super) fn install_video_options(lua: &Lua) -> mlua::Result<()> {
+    // ── The Video options Multisampling dropdown ──────────────────────────────────────────────
+    // `_OnLoad` seeds the selection from `GetCurrentMultisampleFormat()`, `_Initialize` walks
+    // `GetMultisampleFormats()` three values at a time, and the Okay handler calls
+    // `SetMultisampleFormat`.
     // ── The Video options Multisampling dropdown ──────────────────────────────────────────────
     // As `OptionsFrame.lua` drives it: `_OnLoad` seeds the selection from
     // `GetCurrentMultisampleFormat()`, `_Initialize` walks `GetMultisampleFormats()` three values
@@ -554,49 +634,7 @@ pub(super) fn install(lua: &Lua) -> mlua::Result<()> {
             Ok(())
         })?,
     )?;
-
-    install_video_verbs(lua)?;
-
-    // `SetCVar(name, value [, token])` (`0x488c10`).
-    lua.globals().set(
-        "SetCVar",
-        lua.create_function(|lua, args: mlua::MultiValue| {
-            // `lua_isstring(1)` (`0x488c1a`): a string or a number names it.
-            let Some(name) = cvar_arg(args.front()) else {
-                return Err(mlua::Error::runtime(USAGE_SET_CVAR));
-            };
-            // A value with no string form stores "0" (`0x488c8d`-`0x488c98`): an unchecked
-            // CheckButton's `GetChecked()` is nil, and `SoundOptionsCheckButton_OnClick` writes
-            // it as is.
-            let value = cvar_arg(args.get(1)).unwrap_or_else(|| NO_STRING_FORM.to_string());
-            {
-                let mut model = crate::script::model_mut_of(lua);
-                // Flag bit2 (`0x488c67`), tested before anything is written.
-                if model.cvars_read_only.contains(&name.to_ascii_lowercase()) {
-                    return Err(mlua::Error::runtime(format!("\"{name}\" is read-only")));
-                }
-                if !write_cvar(&mut model, &name, value.clone()) {
-                    return Ok(());
-                }
-            }
-            // A third argument that passes `lua_isstring` is the `CVAR_UPDATE` token, arg1, with
-            // the value as arg2 (`0x488cad`-`0x488cd5`), fired on every such call, changed or not,
-            // and inside it: `SignalEvent2` (`0x703f50`) walks the listeners in place. The 1.12
-            // options panels pass their CheckButtons key, such as "STATUS_BAR_TEXT"
-            // (`UIOptionsFrame.lua` l.335), which is how `UIOptionsFrame_OnEvent` finds its row.
-            if let Some(token) = cvar_arg(args.get(2)) {
-                super::tick::fire_event_into(
-                    lua,
-                    "CVAR_UPDATE",
-                    vec![ScriptValue::Str(token), ScriptValue::Str(value)],
-                );
-            }
-            Ok(())
-        })?,
-    )?;
-
-    install_world_detail_verbs(lua)?;
-    super::video_pairs::install(lua)
+    install_video_verbs(lua)
 }
 
 /// What `RestoreVideoDefaults` puts back: the CVars among the reference verb's writes that benilla
@@ -638,6 +676,48 @@ pub const VIDEO_DEFAULT_CVARS: &[&str] = &[
 /// `GetFarclip`/`SetFarclip` (`0x488f00`/`0x488f30`, in [`super::video_pairs`]) do exist;
 /// `getglobal` is case-sensitive.
 fn install_video_verbs(lua: &Lua) -> mlua::Result<()> {
+    // `GetTerrainMip`/`SetTerrainMip` (`0x54eb10`/`0x54eb40`): the terrain detail slider over
+    // `shadowLevel`, inverted (`1 - shadowLevel`); the setter takes a number or raises its usage.
+    lua.globals().set(
+        "GetTerrainMip",
+        lua.create_function(|lua, ()| {
+            let model = lua
+                .app_data_ref::<crate::script::ModelCell>()
+                .expect("model app_data");
+            let level = model
+                .cvars
+                .get("shadowlevel")
+                .map_or(0, |s| super::glue_core::leading_int(&s.value));
+            Ok((1 - level) as f64)
+        })?,
+    )?;
+    lua.globals().set(
+        "SetTerrainMip",
+        lua.create_function(|lua, v: Value| {
+            let Some(n) = lua.coerce_number(v)? else {
+                return Err(mlua::Error::runtime("Usage: SetTerrainMip(value)"));
+            };
+            let value = 1 - super::binding_abi::ftol(n);
+            set_from_engine(
+                &mut crate::script::model_mut_of(lua),
+                "shadowLevel",
+                value.to_string(),
+            );
+            Ok(())
+        })?,
+    )?;
+    // `IsStereoVideoAvailable` (`0x54ef90`): the device's stereo capability, which benilla's
+    // renderer does not offer.
+    lua.globals().set(
+        "IsStereoVideoAvailable",
+        lua.create_function(|_, ()| Ok(Value::Nil))?,
+    )?;
+    // `IsPlayerResolutionAvailable` (`0x54ebc0`): 1 on a machine with more than one processor,
+    // which every machine benilla runs on is.
+    lua.globals().set(
+        "IsPlayerResolutionAvailable",
+        lua.create_function(|_, ()| Ok(1.0))?,
+    )?;
     // ── GetScreenResolutions ─────────────────────────────────────────────────────────────────
     // A vararg of `"WxH"` strings, the spelling `ScreenResolution` pins.
     lua.globals().set(
@@ -759,29 +839,6 @@ fn install_video_verbs(lua: &Lua) -> mlua::Result<()> {
         "RestartGx",
         lua.create_function(|lua, ()| {
             crate::script::model_mut_of(lua).restart_gx_asks += 1;
-            Ok(())
-        })?,
-    )?;
-    // ── RestoreVideoDefaults ─────────────────────────────────────────────────────────────────
-    // The Defaults button's whole effect: `OptionsFrame_SetDefaults` only sets the widgets, which
-    // the button's `OnClick` then hides without `_Save` (`OptionsFrame.xml:688-690`). Ends with a
-    // restart, as the reference calls the `gxRestart` handler between its two passes (`0x639a51`).
-    lua.globals().set(
-        "RestoreVideoDefaults",
-        lua.create_function(|lua, ()| {
-            let mut model = crate::script::model_mut_of(lua);
-            for name in VIDEO_DEFAULT_CVARS {
-                let Some(default) = model
-                    .cvars
-                    .get(&name.to_ascii_lowercase())
-                    .map(|slot| slot.default.clone())
-                else {
-                    // Unregistered in a bare VM: nothing to restore, nothing to warn about.
-                    continue;
-                };
-                set_from_engine(&mut model, name, default);
-            }
-            model.restart_gx_asks += 1;
             Ok(())
         })?,
     )?;

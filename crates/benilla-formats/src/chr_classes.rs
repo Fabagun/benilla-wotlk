@@ -64,7 +64,9 @@ pub const PET_NAME_TOKEN_FALLBACK: &str = "PET";
 #[derive(Debug, Clone)]
 struct ChrClass {
     damage_bonus_stat: u32,
+    file: Option<String>,
     pet_name_token: Option<String>,
+    name: Option<String>,
     has_relic_slot: bool,
     spell_family: u32,
 }
@@ -97,6 +99,12 @@ impl ChrClasses {
             .unwrap_or(PET_NAME_TOKEN_FALLBACK)
     }
 
+    /// The class's `Name_Lang` name, `GetCharacterInfo`'s third return; `None` for a class with no
+    /// row or no name.
+    pub fn name(&self, class: u32) -> Option<&str> {
+        self.by_id.get(&class)?.name.as_deref()
+    }
+
     /// The class's damage bonus stat, 0-based (Strength 0, Agility 1); `None` for a class with
     /// no row, where `GetDamageBonusStat` answers 0.
     pub fn damage_bonus_stat(&self, class: u32) -> Option<u32> {
@@ -113,6 +121,11 @@ impl ChrClasses {
     /// modifier applies. A class with no row answers 0, which matches nothing.
     pub fn spell_family(&self, class: u32) -> u32 {
         self.by_id.get(&class).map_or(0, |c| c.spell_family)
+    }
+
+    /// The class's `Filename` token (`"DEATHKNIGHT"`), `None` for a class with no row.
+    pub fn file(&self, class: u32) -> Option<&str> {
+        self.by_id.get(&class)?.file.as_deref()
     }
 
     /// Every row's names in record order, the walk `FillLocalizedClassList` makes.
@@ -153,7 +166,9 @@ pub fn load_chr_classes(chain: &mut Chain) -> Result<ChrClasses> {
             id,
             ChrClass {
                 damage_bonus_stat: u32_at(r, DAMAGE_BONUS_STAT_FIELD).unwrap_or(0),
+                file: str_at(&rs, r, FILENAME_FIELD),
                 pet_name_token: str_at(&rs, r, PET_NAME_TOKEN_FIELD),
+                name: str_at(&rs, r, NAME_FIELD),
                 has_relic_slot: u32_at(r, FLAGS_FIELD).is_some_and(|v| v & FLAG_RELIC_SLOT != 0),
                 spell_family: u32_at(r, SPELL_FAMILY_FIELD).unwrap_or(0),
             },

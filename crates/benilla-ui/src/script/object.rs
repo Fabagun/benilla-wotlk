@@ -11,10 +11,11 @@ use std::ffi::c_void;
 use mlua::{LightUserData, Lua, ObjectLike, Table, Value};
 
 use super::binding_abi::optional_string;
+use super::glue::VmKind;
 use super::{Model, REG_FRAME_META, REG_FRAME_METHODS, REG_SCRIPTS, REG_WRAPPERS};
 use crate::layout::Point;
 use crate::order::{DrawLayer, Strata};
-use crate::widget::{FrameHandle, FrameKind};
+use crate::widget::{FrameHandle, FrameKind, KindState};
 
 // The frame method clusters, split out for size.
 pub(crate) mod anchor_args;
@@ -75,7 +76,7 @@ pub(crate) fn frame_wrapper(lua: &Lua, id: u32) -> mlua::Result<Table> {
     t.raw_set(0, Value::LightUserData(id_to_lud(id)))?;
     // The kind picks the metatable once, here: a frame's kind never changes and `id_to_frame`
     // never loses an entry, so the choice cannot go stale.
-    let (kind, name): (Option<FrameKind>, Option<String>) = {
+    let (kind, name, ffx): (Option<FrameKind>, Option<String>, bool) = {
         let model = lua
             .app_data_ref::<crate::script::ModelCell>()
             .expect("model app_data");
@@ -83,9 +84,25 @@ pub(crate) fn frame_wrapper(lua: &Lua, id: u32) -> mlua::Result<Table> {
             .id_to_frame
             .get(&id)
             .and_then(|h| model.arena.frame(*h));
-        (frame.map(|f| f.kind), frame.and_then(|f| f.name.clone()))
+        let ffx = frame.is_some_and(|f| matches!(&f.kind_state, KindState::Model(m) if m.ffx));
+        (
+            frame.map(|f| f.kind),
+            frame.and_then(|f| f.name.clone()),
+            ffx,
+        )
     };
-    t.set_metatable(Some(frame_meta_for(lua, kind)?))?;
+    let meta = if ffx {
+        frame_meta_chain(
+            lua,
+            &[
+                super::modelframe::REG_MODELFFX_METHODS,
+                super::modelframe::REG_MODEL_METHODS,
+            ],
+        )?
+    } else {
+        frame_meta_for(lua, kind)?
+    };
+    t.set_metatable(Some(meta))?;
     wrappers.set(id, t.clone())?;
     if let Some(name) = name {
         publish_global(lua, &name, &t)?;
@@ -254,10 +271,10 @@ pub(super) fn draw_layer_name(l: DrawLayer) -> &'static str {
     }
 }
 
-/// A widget tag or `CreateFrame` type → its [`FrameKind`] ([`enum_token`]). Public so the app asks
-/// this one mapping rather than keeping a copy.
+/// A widget tag or `CreateFrame` type → its [`FrameKind`] ([`enum_token`]), whichever registration
+/// makes it known. Public so the app asks this one mapping rather than keeping a copy.
 pub fn frame_kind_from_tag(s: &str) -> Option<FrameKind> {
-    frame_kind_from_str(s)
+    frame_type(s).map(|t| t.kind)
 }
 
 /// The type registry lookup `CreateFrame` and the XML loader share (`0x6ee280`, table
@@ -265,48 +282,80 @@ pub fn frame_kind_from_tag(s: &str) -> Option<FrameKind> {
 /// record is released once the first one is made (`0x6ee439`), so a second one misses. On a miss
 /// Lua raises and XML logs `Unknown frame type: %s` and skips the node.
 pub(crate) fn registered_frame_kind(lua: &Lua, kind: &str) -> Option<FrameKind> {
-    let frame_kind = frame_kind_from_str(kind)?;
-    let one_shot_spent = frame_kind == FrameKind::WorldFrame
-        && lua
-            .app_data_ref::<crate::script::ModelCell>()
-            .expect("model app_data")
-            .world_frame_made;
-    (!one_shot_spent).then_some(frame_kind)
+    let t = frame_type(kind)?;
+    let model = lua
+        .app_data_ref::<crate::script::ModelCell>()
+        .expect("model app_data");
+    let registered = match t.factory {
+        Factory::Startup => true,
+        Factory::InGame => model.vm == VmKind::InGame,
+    };
+    let one_shot_spent = t.kind == FrameKind::WorldFrame && model.world_frame_made;
+    (registered && !one_shot_spent).then_some(t.kind)
 }
 
-fn frame_kind_from_str(s: &str) -> Option<FrameKind> {
-    Some(match enum_token(s).as_str() {
-        "FRAME" => FrameKind::Frame,
-        // Registered at `0x495948`, the one row passing `1` as its third argument.
-        "WORLDFRAME" => FrameKind::WorldFrame,
+/// `ModelFFX`, the glue's `CSimpleModelFFX` (registered by the glue manager's init `0x4db9f0`): a
+/// `CSimpleModel` answering as `Model`, with `Model`'s methods and its own four light methods
+/// (table `0xac465c`).
+pub(crate) fn is_model_ffx(kind: &str) -> bool {
+    enum_token(kind) == "MODELFFX"
+}
+
+/// When a frame type's factory is registered (`FrameXML_RegisterFactory` `0x813d20`) into the
+/// process-wide registry, which nothing clears before shutdown.
+#[derive(Clone, Copy)]
+enum Factory {
+    /// Before any FrameScript state is built: the 13 base types (`0x813df0`), and `ModelFFX`,
+    /// which the glue manager's init registers (`0x4db9f0`) before its first build, so the
+    /// in-game state has it too.
+    Startup,
+    /// `CGWorldFrame::RegisterFrames`'s eight (`0x521040`). They stay registered after a logout,
+    /// so only a glue state that never entered the world lacks them, which is the one benilla
+    /// builds.
+    InGame,
+}
+
+/// A registered type: the [`FrameKind`] its factory builds, and its registration.
+struct FrameType {
+    kind: FrameKind,
+    factory: Factory,
+}
+
+fn frame_type(s: &str) -> Option<FrameType> {
+    use Factory::{InGame, Startup};
+    let (kind, factory) = match enum_token(s).as_str() {
+        "FRAME" => (FrameKind::Frame, Startup),
+        // Registered by `0x521040`, the one row passing `1` (unique) as its third argument.
+        "WORLDFRAME" => (FrameKind::WorldFrame, InGame),
         // A plain `CSimpleFrame`: factory `0x495ba0` allocates `0x314` like `<Frame>`'s `0x6eec10`,
         // the ctor `0x506950` adds no field, and its paint `0x506a90` does nothing, so
         // `GetObjectType()` is "Frame" and `IsObjectType("TaxiRouteFrame")` false (`0x484800` is
         // not overridden). The flight lines are the FrameXML's own rotated textures.
-        "TAXIROUTEFRAME" => FrameKind::Frame,
-        "BUTTON" => FrameKind::Button,
-        "CHECKBUTTON" => FrameKind::CheckButton,
-        "EDITBOX" => FrameKind::EditBox,
-        "STATUSBAR" => FrameKind::StatusBar,
-        "SLIDER" => FrameKind::Slider,
-        "SCROLLFRAME" => FrameKind::ScrollFrame,
-        "MODEL" => FrameKind::Model,
-        "PLAYERMODEL" => FrameKind::PlayerModel,
-        "DRESSUPMODEL" => FrameKind::DressUpModel,
-        "TABARDMODEL" => FrameKind::TabardModel,
-        "MESSAGEFRAME" => FrameKind::MessageFrame,
-        "SCROLLINGMESSAGEFRAME" => FrameKind::ScrollingMessageFrame,
-        "COLORSELECT" => FrameKind::ColorSelect,
-        "SIMPLEHTML" => FrameKind::SimpleHtml,
-        "MOVIEFRAME" => FrameKind::MovieFrame,
-        "GAMETOOLTIP" => FrameKind::GameTooltip,
-        "MINIMAP" => FrameKind::Minimap,
-        // Registered at `0x521069`, factory `0x51a380`.
-        "COOLDOWN" => FrameKind::Cooldown,
-        // Registered at `0x5210c1`; `IsObjectType` `0x58fb00`.
-        "QUESTPOIFRAME" => FrameKind::QuestPoiFrame,
+        "TAXIROUTEFRAME" => (FrameKind::Frame, InGame),
+        "BUTTON" => (FrameKind::Button, Startup),
+        "CHECKBUTTON" => (FrameKind::CheckButton, Startup),
+        "EDITBOX" => (FrameKind::EditBox, Startup),
+        "STATUSBAR" => (FrameKind::StatusBar, Startup),
+        "SLIDER" => (FrameKind::Slider, Startup),
+        "SCROLLFRAME" => (FrameKind::ScrollFrame, Startup),
+        "MODEL" => (FrameKind::Model, Startup),
+        "MODELFFX" => (FrameKind::Model, Startup),
+        "PLAYERMODEL" => (FrameKind::PlayerModel, InGame),
+        "DRESSUPMODEL" => (FrameKind::DressUpModel, InGame),
+        "TABARDMODEL" => (FrameKind::TabardModel, InGame),
+        "MESSAGEFRAME" => (FrameKind::MessageFrame, Startup),
+        "SCROLLINGMESSAGEFRAME" => (FrameKind::ScrollingMessageFrame, Startup),
+        "COLORSELECT" => (FrameKind::ColorSelect, Startup),
+        "SIMPLEHTML" => (FrameKind::SimpleHtml, Startup),
+        "MOVIEFRAME" => (FrameKind::MovieFrame, Startup),
+        "GAMETOOLTIP" => (FrameKind::GameTooltip, InGame),
+        "MINIMAP" => (FrameKind::Minimap, InGame),
+        "COOLDOWN" => (FrameKind::Cooldown, InGame),
+        // `IsObjectType` `0x58fb00`.
+        "QUESTPOIFRAME" => (FrameKind::QuestPoiFrame, InGame),
         _ => return None,
-    })
+    };
+    Some(FrameType { kind, factory })
 }
 
 /// A Lua number-ish → f32 (nil/other → 0.0), for offset/color args.
@@ -358,7 +407,12 @@ pub(super) fn install(lua: &Lua) -> mlua::Result<()> {
 
     let create_frame = lua.create_function(create_frame)?;
     lua.globals().set("CreateFrame", create_frame)?;
+    Ok(())
+}
 
+/// The frame globals only the in-game state registers (table `0xac80b0`): the glue state's
+/// `GetScreenWidth`/`GetScreenHeight` are other bindings (`0x4dcc20`/`0x4dcc70`).
+pub(super) fn install_in_game(lua: &Lua) -> mlua::Result<()> {
     // `GetScreenWidth`/`GetScreenHeight`: the screen root's size in UI units.
     lua.globals().set(
         "GetScreenWidth",
@@ -454,7 +508,11 @@ const REG_KIND_METAS: &str = "__benilla_frame_meta_by_kind";
 /// tail-calling its base's (`CheckButton`, `Button`, `Frame`): a later write to a table shows
 /// through, and a plain Frame never reaches `StatusBar`'s methods, so `frame.SetValue` stays nil.
 fn frame_meta_for(lua: &Lua, kind: Option<FrameKind>) -> mlua::Result<Table> {
-    let chain = kind_method_registries(kind);
+    frame_meta_chain(lua, kind_method_registries(kind))
+}
+
+/// [`frame_meta_for`] over an explicit chain of method registries, own table first.
+fn frame_meta_chain(lua: &Lua, chain: &[&'static str]) -> mlua::Result<Table> {
     let key = chain.first().copied().unwrap_or("");
     let metas: Table = lua.named_registry_value(REG_KIND_METAS)?;
     if let Value::Table(meta) = metas.raw_get::<Value>(key)? {
@@ -619,6 +677,11 @@ pub(super) fn create_frame(
         let h = model.arena.create(frame_kind, name, parent_handle);
         if frame_kind == FrameKind::WorldFrame {
             model.world_frame_made = true;
+        }
+        if is_model_ffx(&kind) {
+            if let Some(KindState::Model(m)) = model.arena.frame_mut(h).map(|f| &mut f.kind_state) {
+                m.ffx = true;
+            }
         }
         // A child enters its parent's stratum at the parent's level + 1; an explicit
         // `frameStrata` or `frameLevel` still overrides it afterwards.

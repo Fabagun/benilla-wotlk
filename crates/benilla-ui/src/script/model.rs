@@ -59,6 +59,8 @@ impl<T: Copy> IdMap<T> {
 /// The Rust-side model behind the Lua VM, in `lua.app_data`. It holds no mlua handles, whose
 /// persistent count the vendored `LUAI_MAXCSTACK` caps.
 pub(crate) struct Model {
+    /// Which FrameScript state this VM is: it picks the event table and the frame types.
+    pub(crate) vm: super::glue::VmKind,
     /// Every discovered addon in load order: the AddOn API's registry, filled at world entry.
     pub(crate) addons: Vec<super::addon::AddOnInfo>,
     /// The Lua index space into `addons`, a title-sorted, hidden-filtered list (`0x51da70`).
@@ -188,6 +190,8 @@ pub(crate) struct Model {
     pub(crate) model_facts: HashMap<String, std::sync::Arc<crate::widget::ModelFileFacts>>,
     /// Model files still waiting for their facts, for the host to load; deduplicated.
     pub(crate) model_facts_wanted: Vec<String>,
+    /// The model instances `SetModel` has made in this state, the last one's number.
+    pub(crate) model_instances: u64,
     /// Event name to its frames in registration order, never a set: `SignalEvent` (`0x703e50`)
     /// dispatches in that order across frames. Re-registering keeps a frame's position.
     pub(crate) event_to_frames: HashMap<String, Vec<FrameHandle>>,
@@ -353,6 +357,8 @@ pub(crate) struct Model {
     pub(crate) camera_view_requests: Vec<camera_view::CameraViewRequest>,
     /// `Logout`, `Quit`, `CancelLogout`, `ForceQuit` calls; Lua sees the countdown only as events.
     pub(crate) session_requests: Vec<session::SessionRequest>,
+    /// The glue core's slots and request queue; empty in an in-game VM.
+    pub(crate) glue: super::glue_core::GlueCore,
     /// `TogglePVP` calls, a count because `CMSG_TOGGLE_PVP` has no body.
     pub(crate) pvp_toggles: u32,
     /// The player's private honor fields; before the first push the six self getters read zeros.
@@ -1090,6 +1096,7 @@ impl Model {
 
     pub(crate) fn new() -> Model {
         Model {
+            vm: super::glue::VmKind::InGame,
             addons: Vec::new(),
             addon_index: Vec::new(),
             addon_info_hidden: None,
@@ -1145,6 +1152,7 @@ impl Model {
             xml_loading: HashSet::new(),
             model_facts: HashMap::new(),
             model_facts_wanted: Vec::new(),
+            model_instances: 0,
             event_to_frames: HashMap::new(),
             frame_events: HashMap::new(),
             all_event_frames: Vec::new(),
@@ -1221,6 +1229,7 @@ impl Model {
             follow_requests: Vec::new(),
             camera_view_requests: Vec::new(),
             session_requests: Vec::new(),
+            glue: Default::default(),
             pvp_toggles: 0,
             honor: None,
             inspect_honor: None,

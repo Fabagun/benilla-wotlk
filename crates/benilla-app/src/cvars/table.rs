@@ -157,6 +157,50 @@ pub(crate) const REGISTERED_WOTLK: &[Registered] = &[
     // `0x51e027`, "" with flags 0x120: the tracked achievements, which `LoadTrackedState` reads
     // and the tracking verbs write (`0x5b3840`, `0x5b1fa0`); per character like the dropdowns.
     same("trackedAchievements", "").per_character(),
+    // The login screen's third agreement (`readTerminationWithoutNotice`, "0"), and the saved
+    // Battle.net account list (`accountList`, "") and authenticator flag
+    // (`g_accountUsesToken`, "0") the glue's account verbs read and write.
+    same("readTerminationWithoutNotice", "0"),
+    same("accountList", ""),
+    same("g_accountUsesToken", "0"),
+    // The stock options panels' remaining rows, glue and in-game alike: "Display the launcher
+    // when starting the game" (`showToolsUI`, "-1"), "prevent resizing in windowed mode"
+    // (`windowResizeLock`, "0"), and the 3.3.5a sound switches the Sound panel binds, each at its
+    // registered default. Their host wiring is the options work's (#150).
+    same("showToolsUI", "-1"),
+    same("windowResizeLock", "0"),
+    same("Sound_EnableAllSound", "1"),
+    same("Sound_EnableSFX", "1"),
+    same("Sound_EnableErrorSpeech", "1"),
+    same("Sound_EnableEmoteSounds", "1"),
+    same("Sound_EnablePetSounds", "1"),
+    same("Sound_EnableMusic", "1"),
+    same("Sound_ZoneMusicNoDelay", "0"),
+    same("Sound_EnableAmbience", "1"),
+    same("Sound_EnableReverb", "0"),
+    same("Sound_EnableSoftwareHRTF", "0"),
+    // "1" on a machine with more than one processor.
+    same("Sound_EnableDSPEffects", "1"),
+    same("Sound_OutputQuality", "1"),
+    same("Sound_OutputDriverIndex", "0"),
+    same("Sound_NumChannels", "32"),
+    // The Effects panel's particle density and the Stereo panel's three rows.
+    same("particleDensity", "1.0"),
+    same("gxStereoEnabled", "0"),
+    same("gxStereoConvergence", "1"),
+    same("gxStereoSeparation", "25"),
+    same("extShadowQuality", "0"),
+    same("Sound_EnableHardware", "0"),
+    same("Sound_MasterVolume", "1.0"),
+    same("Sound_SFXVolume", "1.0"),
+    same("Sound_MusicVolume", "0.4"),
+    same("Sound_AmbienceVolume", "0.6"),
+    same("environmentDetail", "1.0"),
+    same("groundEffectDensity", "16"),
+    same("groundEffectDist", "70.0"),
+    same("projectedTextures", "0"),
+    same("textureFilteringMode", "1"),
+    same("componentTextureLevel", "8"),
 ];
 
 /// The host-backed CVars, one row per knob that has a reader: a host knob, or a Lua consumer
@@ -776,4 +820,13 @@ pub(crate) const REGISTERED: &[Registered] = &[
     // "Last character selected": a 0-based row (the selection cell `[0x83856c]` under `"%d"`), so
     // "0" is the first character. It mirrors [`crate::char_select::Roster::pending_index`].
     same(crate::char_select::CVAR_LAST_CHARACTER, "0"),
+    // The four user agreements the login screen walks (`0x402db6`, `0x402dd9`, `0x402dfc`,
+    // `0x402e1f`; "0" `0x82e570`, category 4): "Status of the TOS" (`0x82e8e4`), "... the EULA"
+    // (`0x82e8c8`), "... the Scanning notice" (`0x82e89c`) and "... the Contest notice"
+    // (`0x82e86c`). The glue manager reads them once at startup (`0x46a400`) as accepted (1) and
+    // changed (negative), and its `Accept*` writes "1" (`0x46aef0` and its siblings).
+    same("readTOS", "0"),
+    same("readEULA", "0"),
+    same("readScanning", "0"),
+    same("readContest", "0"),
 ];

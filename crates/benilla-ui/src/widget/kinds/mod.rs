@@ -54,6 +54,19 @@ pub enum FrameKind {
     QuestPoiFrame,
 }
 
+impl FrameKind {
+    /// A `CSimpleModel` kind, carrying a [`ModelState`].
+    pub fn is_model(self) -> bool {
+        matches!(
+            self,
+            FrameKind::Model
+                | FrameKind::PlayerModel
+                | FrameKind::DressUpModel
+                | FrameKind::TabardModel
+        )
+    }
+}
+
 /// The kind of a [`Region`] leaf, the client's `CScriptRegion`-derived non-frame objects.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum RegionKind {
@@ -272,6 +285,26 @@ pub struct ModelState {
     pub fog_near: f32,
     /// Fog far (`+0x3b0`), shaped like [`Self::fog_near`]; the ctor's is `1.0`.
     pub fog_far: f32,
+    /// A `ModelFFX`, the glue's `CSimpleModelFFX` (`0x46fa00`). Its vtable differs from
+    /// `CSimpleModel`'s in two slots past the destructor: its OnShow (`0x46fa60`) installs the glue
+    /// glow pass (`0x6cde60` with `[0xb414c4]`) and pins `LightParams.glow` to `*0x8380b4` (0.30),
+    /// and its layer-2 paint callback (`0x46fad0`, registered by `0x46fa90`) brackets the model
+    /// paint `0x76d240` with the full-screen-effect pass pair `0x6cd890`/`0x6cda70`.
+    pub ffx: bool,
+    /// `SetGlow(value)`: the model's glow, `None` until a script sets one.
+    pub glow: Option<f32>,
+    /// A `ModelFFX`'s custom lights: the background's, the character's and the pet's sets
+    /// (`AddLight`, `AddCharacterLight`, `AddPetLight`), each two arrays of up to four,
+    /// `ResetLights` clearing all six.
+    pub ffx_lights: [[Vec<ModelLight>; 2]; 3],
+    /// The scene's lighting callback is the select screen's (`GenericLightingCallback`
+    /// `0x4e3a20`, installed by `SetCharSelectBackground` at `0x4e3c7f`); it rides the model
+    /// instance, so the next `SetModel` or `ClearModel` drops it.
+    pub select_lighting: bool,
+    /// The number of the instance the last `SetModel` made: `0x76cce0` builds a new one on every
+    /// call (`0x76ccf5`-`0x76cd0d`), its scene starting over, even for the file it held. 0 for
+    /// none.
+    pub instance: u64,
 }
 
 /// A model pane's armed fog, all the renderer needs ([`ModelState::armed_fog`]).
@@ -344,6 +377,11 @@ impl Default for ModelState {
             fog: false,
             fog_near: 0.0,
             fog_far: 1.0,
+            ffx: false,
+            glow: None,
+            ffx_lights: Default::default(),
+            select_lighting: false,
+            instance: 0,
         }
     }
 }
@@ -446,6 +484,7 @@ impl ModelState {
         self.icon = None;
         self.armed = None;
         self.pending_seed = true;
+        self.select_lighting = false;
         if let Some(facts) = facts {
             self.seed_from_facts(facts);
         }
@@ -458,6 +497,7 @@ impl ModelState {
         self.icon = None;
         self.armed = None;
         self.pending_seed = false;
+        self.select_lighting = false;
     }
 
     /// `SetSequence`/`SetSequenceTime` (`0x7121a0`): interrupts what plays, with no

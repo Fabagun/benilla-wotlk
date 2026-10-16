@@ -1,7 +1,8 @@
 //! The UI session's lifecycle, all edges and nothing per-frame: `Startup` installs a boot VM
-//! (strings and emote tokens); world entry builds a fresh VM and loads the in-game UI and every
-//! addon onto it; leaving the world runs the reference's shutdown tail and installs a boot
-//! VM again; `ReloadUI()` is the two edges back to back without leaving the world.
+//! (strings and emote tokens), or the stock glue screens' VM under `WOW_GLUE_STOCK=1`; world entry
+//! builds a fresh VM and loads the in-game UI and every addon onto it; leaving the world runs the
+//! reference's shutdown tail and installs the glue-side VM again; `ReloadUI()` is the two edges
+//! back to back without leaving the world.
 
 use bevy::prelude::*;
 
@@ -13,26 +14,114 @@ use super::{load_ingame_ui, CursorPayloadHeld, PlayerUiHover, UiClock, UiKeyboar
 use crate::ui_script::addons;
 
 pub(crate) fn setup_script(world: &mut World) {
-    install_boot_vm(world);
+    install_glue_side_vm(world, super::glue::GlueScreen::Login);
+}
+
+/// Install the VM the world holds outside the world: the stock glue screens' under
+/// [`super::glue::GlueStock`], put up on `screen`, else a boot VM.
+///
+/// The IO thread's roster policy follows the VM that is up: the screen asks for its roster only
+/// when the stock glue VM was built and its character select screen loaded, so a run whose stock VM failed to build (logged as an error
+/// by [`new_vm`]) falls back to the park's own enumeration instead of waiting on a screen that
+/// never asks.
+fn install_glue_side_vm(world: &mut World, screen: super::glue::GlueScreen) {
+    let stock_asked = world
+        .get_resource::<super::glue::GlueStock>()
+        .is_some_and(|s| s.0);
+    let stock_up = if stock_asked {
+        install_glue_vm(world, screen)
+    } else {
+        install_boot_vm(world);
+        false
+    };
+    if stock_asked && !stock_up {
+        error!("ui_script: WOW_GLUE_STOCK=1 but the stock glue VM did not come up with its character select screen; the roster is fetched at the park");
+    }
+    if let Some(policy) = world.get_resource::<crate::net::RosterPolicy>() {
+        policy
+            .0
+            .store(stock_up, std::sync::atomic::Ordering::SeqCst);
+    }
 }
 
 /// Build and install a boot VM, the one the world holds outside an in-game UI session: the
 /// strings the feeds resolve lines from and the emote tokens `/`-commands are built from
 /// (`ui_chat::commands`), no frames and no font objects. Installed at `Startup` and at every
-/// [`end_ui_session`].
+/// [`end_ui_session`], unless the stock glue screens stand there instead ([`install_glue_vm`]).
 fn install_boot_vm(world: &mut World) {
-    let Some(script) = new_vm(world) else {
-        return;
-    };
-    load_global_strings(world, &script);
-    load_emote_tokens(world, &script);
-    world.insert_non_send_resource(script);
+    if let Some(script) = strings_vm(world) {
+        world.insert_non_send_resource(script);
+    }
 }
 
-/// A fresh VM on the process clock with the addon asset probes wired, or `None` (the world's VM
-/// removed) when the VM cannot start.
-fn new_vm(world: &mut World) -> Option<UiScript> {
-    let mut script = match UiScript::new() {
+/// A boot VM's contents on a VM of their own: `GlobalStrings.lua` and the emote tokens, for a
+/// reader that needs them where the world holds the glue VM. `None` (the world's VM removed) when
+/// the VM cannot start.
+pub(crate) fn strings_vm(world: &mut World) -> Option<UiScript> {
+    let script = new_vm(world, UiScript::new)?;
+    load_global_strings(world, &script);
+    load_emote_tokens(world, &script);
+    Some(script)
+}
+
+/// Build the glue VM, load the stock GlueXML onto it, install it and put `screen` up: the glue
+/// builder `0x46a7b0` then `SET_GLUE_SCREEN` (`0x402b65` at startup, `0x402090` back from the
+/// world). It holds what the glue state holds and nothing of the boot VM's: no `GlobalStrings.lua`,
+/// no emote tokens.
+fn install_glue_vm(world: &mut World, screen: super::glue::GlueScreen) -> bool {
+    let Some(mut script) = new_vm(world, UiScript::new_glue) else {
+        return false;
+    };
+    seat_raster_seam_for_load(world, &mut script);
+    // The CVar table before the files load: the options panels read their CVars in `OnLoad`, and
+    // this VM was born before `cvars::sync_cvars`'s per-VM seed.
+    match world.get_resource::<crate::cvars::Cvars>() {
+        Some(cvars) => script.seed_cvars(cvars.vm_seed()),
+        None => script.register_cvars(crate::cvars::registered_pairs()),
+    }
+    let start = std::time::Instant::now();
+    let failures = super::glue::load_glue(&mut script);
+    super::glue::finish_glue_load_log(&mut script);
+    start_server_alert(world, &script);
+    super::glue_mgr::seat_glue_vm(world, &mut script);
+    super::glue::set_glue_screen(&mut script, screen);
+    info!(
+        "ui_script: stock glue up in {:.0} ms on \"{}\" ({} load failure(s))",
+        start.elapsed().as_secs_f32() * 1000.0,
+        screen.key(),
+        failures.len()
+    );
+    // Up means the screen that asks for the roster exists: the stock files loaded far enough to
+    // define the character select frame and its `OnShow`, not merely that a VM started.
+    let charselect = script
+        .eval::<bool>(
+            "return type(CharacterSelect) == 'table' and type(CharacterSelect_OnShow) == 'function'",
+        )
+        .unwrap_or(false);
+    world.insert_non_send_resource(script);
+    charselect
+}
+
+/// Start the server alert's fetch, as the glue manager's init does after the GlueXML load and
+/// before the first screen (`0x46a541`-`0x46a564`, `0x402b36`): the global `SERVER_ALERT_URL` as
+/// the glue files left it, so `GlueLocalization` wins over `GlueStrings`, fetched once per
+/// process ([`super::server_alert::begin_once`]).
+fn start_server_alert(world: &mut World, script: &UiScript) {
+    let url = script.global_text("SERVER_ALERT_URL");
+    if let Some(fetch) = super::server_alert::begin_once(&url) {
+        if let Some(mut mgr) = world.get_resource_mut::<super::glue_mgr::GlueMgr>() {
+            mgr.set_alert_fetch(fetch);
+        }
+    }
+}
+
+/// A fresh VM from `make` on the process clock with the addon asset probes wired, or `None` (the
+/// world's VM removed) when the VM cannot start.
+fn new_vm<E: std::fmt::Display>(
+    world: &mut World,
+    make: fn() -> Result<UiScript, E>,
+) -> Option<UiScript> {
+    let mut script = match make() {
         Ok(s) => s,
         Err(e) => {
             error!("ui_script: VM init failed: {e}");
@@ -178,7 +267,7 @@ pub(crate) fn arm_entry_ui_load(world: &mut World) {
 /// `GlobalStrings.lua` and `Fonts.xml` as its first rows, and `ChatFrame.lua` the emote tokens.
 fn mint_entry_vm(world: &mut World) {
     crate::cvars::fold_dying_vm_cvars(world);
-    if let Some(script) = new_vm(world) {
+    if let Some(script) = new_vm(world, UiScript::new) {
         world.insert_non_send_resource(script);
     }
 }
@@ -621,8 +710,24 @@ pub(crate) fn shutdown_ui_state(
 /// shutdown tail, then end this session's Lua state, so no frame, global or addon upvalue reaches
 /// the next login. The reference's state outlives `0x490bd0` and is replaced twice through
 /// `0x703b80`, in `ShutdownGame` (at `0x491231`) and then in the glue build (`0x46a7b0`), so the
-/// character screen runs on a state of its own. Ours is a fresh boot VM.
+/// character screen runs on a state of its own. Ours is a fresh boot VM, or the stock glue's
+/// ([`install_glue_side_vm`]).
 pub(crate) fn end_ui_session(world: &mut World) {
+    close_ui_session(world);
+    // `0x401ee0`'s glue leg: `"charselect"` after a logout, `"login"` after a disconnect
+    // (`0x402084`); the state this exit enters says which.
+    let screen = match world
+        .get_resource::<State<crate::char_select::ClientState>>()
+        .map(|s| *s.get())
+    {
+        Some(crate::char_select::ClientState::CharSelect) => super::glue::GlueScreen::CharSelect,
+        _ => super::glue::GlueScreen::Login,
+    };
+    install_glue_side_vm(world, screen);
+}
+
+/// [`end_ui_session`] up to the new VM: the shutdown tail, the folds and the host values reset.
+fn close_ui_session(world: &mut World) {
     // A VM still parked (the load never ran) goes back into the world first.
     unpark_boot_vm(world);
     // An entry load still armed means no in-game UI was built, and the tail would overwrite the
@@ -664,8 +769,6 @@ pub(crate) fn end_ui_session(world: &mut World) {
     if let Some(mut minimap) = world.get_resource_mut::<crate::minimap::MinimapWidget>() {
         minimap.0 = None;
     }
-
-    install_boot_vm(world);
 }
 
 /// A `ReloadUI()` waiting to run: set when [`crate::ui_logout`] drains
@@ -698,7 +801,10 @@ pub(crate) fn run_pending_reload(world: &mut World) {
     let combat_log = world
         .get_non_send_resource_mut::<UiScript>()
         .map(|mut s| s.take_combat_log());
-    end_ui_session(world);
+    // A boot VM, never the glue's: the reload builds no glue, and the load replaces this VM at
+    // once.
+    close_ui_session(world);
+    install_boot_vm(world);
     load_ingame_ui_on_world_entry(world);
     if let (Some(store), Some(mut script)) =
         (combat_log, world.get_non_send_resource_mut::<UiScript>())
@@ -962,6 +1068,72 @@ mod tests {
             reload(false).1,
             0,
             "no cascade before our own player's create"
+        );
+    }
+
+    /// The IO thread's roster policy follows the VM that came up: the screen asks only when the
+    /// stock glue VM stands, so a boot VM leaves the park to fetch the roster.
+    #[test]
+    fn the_roster_policy_follows_the_vm_that_stands() {
+        use std::sync::atomic::Ordering;
+        for stock in [true, false] {
+            let mut world = World::new();
+            let policy = crate::net::RosterPolicy(Default::default());
+            policy.0.store(!stock, Ordering::SeqCst);
+            world.insert_resource(policy.clone());
+            world.insert_resource(super::super::glue::GlueStock(stock));
+            world.insert_resource(State::new(crate::char_select::ClientState::Login));
+            setup_script(&mut world);
+            // The stock policy needs the stock files to have loaded: no install, no screen.
+            let up = stock && benilla_formats::wow_data().is_some();
+            assert_eq!(policy.0.load(Ordering::SeqCst), up, "stock {stock}");
+        }
+    }
+
+    /// Under `WOW_GLUE_STOCK=1` the world holds the glue VM where it holds a boot VM, at startup
+    /// on the login screen (`0x402b65`) and back from the world on the screen the exit enters
+    /// (`0x402090`); a `ReloadUI()` never builds the glue.
+    #[test]
+    fn the_stock_glue_stands_where_the_boot_vm_does() {
+        use crate::char_select::ClientState;
+        use benilla_ui::script::VmKind;
+        let shown = |world: &World, frame: &str| {
+            benilla_formats::wow_data().is_none()
+                || world
+                    .non_send_resource::<UiScript>()
+                    .eval::<bool>(&format!("return {frame}:IsShown() == 1"))
+                    .unwrap()
+        };
+        let mut world = World::new();
+        world.insert_resource(super::super::glue::GlueStock(true));
+        world.insert_resource(State::new(ClientState::Login));
+        setup_script(&mut world);
+        assert_eq!(
+            world.non_send_resource::<UiScript>().vm_kind(),
+            VmKind::Glue
+        );
+        assert!(shown(&world, "AccountLogin"), "the boot screen is login");
+
+        world.insert_resource(State::new(ClientState::CharSelect));
+        world.init_resource::<PendingEntryUiLoad>();
+        end_ui_session(&mut world);
+        assert_eq!(
+            world.non_send_resource::<UiScript>().vm_kind(),
+            VmKind::Glue
+        );
+        assert!(
+            shown(&world, "CharacterSelect"),
+            "a logout puts the character screen up"
+        );
+
+        world.insert_resource(State::new(ClientState::InWorld));
+        world.insert_resource(crate::run_mode::CaptureMode);
+        world.insert_resource(ReloadUiPending(true));
+        run_pending_reload(&mut world);
+        assert_eq!(
+            world.non_send_resource::<UiScript>().vm_kind(),
+            VmKind::InGame,
+            "the reload's VM is a boot VM, never the glue's"
         );
     }
 
