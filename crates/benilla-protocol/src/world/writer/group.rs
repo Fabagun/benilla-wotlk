@@ -8,16 +8,16 @@ use super::WorldWriter;
 
 impl WorldWriter {
     /// Invite a player to group, answered by `SMSG_PARTY_COMMAND_RESULT`.
-    pub fn group_invite(&mut self, member_name: &str) -> Result<()> {
+    pub fn group_invite(&mut self, member_name: &str, flags: u32) -> Result<()> {
         self.send(
             opcode::CMSG_GROUP_INVITE,
-            &messages::group_invite(member_name),
+            &messages::group_invite(member_name, flags),
         )
     }
 
     /// Accept a pending group invite (`CMSG_GROUP_ACCEPT`, empty body).
-    pub fn group_accept(&mut self) -> Result<()> {
-        self.send(opcode::CMSG_GROUP_ACCEPT, &messages::group_accept())
+    pub fn group_accept(&mut self, roles: u32) -> Result<()> {
+        self.send(opcode::CMSG_GROUP_ACCEPT, &messages::group_accept(roles))
     }
 
     /// Decline a pending group invite; the inviter gets `SMSG_GROUP_DECLINE`.
@@ -33,11 +33,11 @@ impl WorldWriter {
         )
     }
 
-    /// Kick a group member by guid (`CMSG_GROUP_UNINVITE_GUID`), the raid frame's kick.
-    pub fn group_uninvite_guid(&mut self, guid: u64) -> Result<()> {
+    /// Kick a group member by guid with a reason (`CMSG_GROUP_UNINVITE_GUID`), `UninviteUnit`'s kick.
+    pub fn group_uninvite_guid(&mut self, guid: u64, reason: &str) -> Result<()> {
         self.send(
             opcode::CMSG_GROUP_UNINVITE_GUID,
-            &messages::group_uninvite_guid(guid),
+            &messages::group_uninvite_guid(guid, reason),
         )
     }
 

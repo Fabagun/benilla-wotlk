@@ -86,6 +86,7 @@ mod binding_abi;
 mod dialog_verbs;
 mod secure_call;
 mod tutorial;
+mod unit_menu;
 mod worldmap_arrow;
 // `camera_view`: the five camera views and `FlipCameraYaw`, the reference's `UIUtil\Camera.cpp`.
 mod button;
@@ -943,6 +944,7 @@ fn install_in_game(lua: &Lua) -> mlua::Result<()> {
     battlefield_score::install(lua)?;
     battlefield_queue::install(lua)?;
     battlefield_positions::install(lua)?;
+    unit_menu::install(lua)?;
     tutorial::install(lua)?;
     worldmap_arrow::install(lua)?;
     shapeshift::install(lua)?;
@@ -1450,6 +1452,12 @@ impl UiScript {
         };
         if let Some(source) = abandoned {
             self.fire_drag_stop(source);
+        }
+        // No release will be fed, so no button reads as held: a chat tab's drag poll then ends.
+        if self.model_ref().mouse_buttons_down != 0 {
+            let quiet = self.visual_epoch();
+            self.model_mut().mouse_buttons_down = 0;
+            self.restore_epoch(quiet);
         }
         if self.model_ref().mouse_down_on.is_empty() {
             return;
