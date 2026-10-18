@@ -61,6 +61,7 @@ fn the_walk_bit_reaches_the_clip_through_the_speed_and_nothing_else() {
         swim: 4.722,
         swim_back: 2.5,
         turn_rate: std::f32::consts::PI,
+        ..Default::default()
     };
     let gait = |flags: u32| {
         let mv = MovementState {
@@ -887,6 +888,34 @@ fn swing_ids_cover_both_hands() {
     }
     assert!(!is_swing_id(20)); // the defense clips are not swings
     assert!(!is_swing_id(30));
+}
+
+/// A flyer takes every swim arm (`0x717050`, `0x71e340`): the stroke moving, the swim idle still,
+/// and no ground shuffle; a flying mount keeps its flight cycles in those slots.
+#[test]
+fn a_flyer_strokes_and_idles_as_a_swimmer() {
+    let flyer = MovementState {
+        flags: move_flags::FLYING | move_flags::FORWARD,
+        ..moving_forward(14.0)
+    };
+    assert_eq!(gait_candidates(&flyer, 2.5, None, None), &[42, 41, 0]);
+    let hovering = MovementState {
+        flags: move_flags::FLYING,
+        speed: 0.0,
+        ..flyer
+    };
+    assert!(matches!(
+        base_candidates(&hovering, 2.5, None, None, None),
+        BaseCands::Fixed(&[41, 0])
+    ));
+    let turning = MovementState {
+        flags: move_flags::FLYING | move_flags::TURN_LEFT,
+        ..hovering
+    };
+    assert!(matches!(
+        base_candidates(&turning, 2.5, None, None, None),
+        BaseCands::Fixed(&[41, 0])
+    ));
 }
 
 #[test]
