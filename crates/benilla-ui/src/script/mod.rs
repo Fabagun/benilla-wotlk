@@ -84,9 +84,11 @@ mod bind_confirm;
 mod binder;
 mod binding_abi;
 mod dialog_verbs;
+pub mod focus;
 mod secure_call;
 mod tutorial;
 mod unit_menu;
+pub use unit_menu::{DifficultyState, ReferAFriendState};
 mod worldmap_arrow;
 // `camera_view`: the five camera views and `FlipCameraYaw`, the reference's `UIUtil\Camera.cpp`.
 mod button;
@@ -950,6 +952,7 @@ fn install_in_game(lua: &Lua) -> mlua::Result<()> {
     battlefield_queue::install(lua)?;
     battlefield_positions::install(lua)?;
     unit_menu::install(lua)?;
+    focus::install(lua)?;
     tutorial::install(lua)?;
     worldmap_arrow::install(lua)?;
     shapeshift::install(lua)?;

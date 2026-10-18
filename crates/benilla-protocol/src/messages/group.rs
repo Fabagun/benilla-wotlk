@@ -107,8 +107,43 @@ pub struct GroupLootInfo {
     pub threshold: u8,
 }
 
+/// The group's instance difficulties from the list's loot tail, each 0-based (`0x6d8fc3`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct GroupDifficulties {
+    /// `[0xbd1978]`, the group's dungeon difficulty.
+    pub dungeon: u8,
+    /// `[0xbd197c]`, the group's raid difficulty.
+    pub raid: u8,
+    /// `[0xbd1980]`, the dynamic difficulty of a flexible raid map.
+    pub dynamic: u8,
+}
+
+/// One `MSG_SET_DUNGEON_DIFFICULTY` or `MSG_SET_RAID_DIFFICULTY`: a 0-based difficulty and which of
+/// the player's own and the group's it sets (`0x525530`, `0x5255a0`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DifficultySet {
+    pub difficulty: u32,
+    pub set_player: bool,
+    pub set_group: bool,
+}
+
+/// What `SMSG_GROUP_LIST` carries, as [`read_group_list`] folds it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct GroupList {
+    pub group_type: u8,
+    pub own_flags: u8,
+    pub own_roles: u8,
+    pub members: Vec<GroupMemberEntry>,
+    pub leader: u64,
+    pub loot: Option<GroupLootInfo>,
+    pub difficulties: Option<GroupDifficulties>,
+    pub lfg_restricted: bool,
+}
+
 /// 3.3.5a's group-type raid bit (`0x6d8870` tests `& 2`); `& 1` is a battleground group.
 const GROUP_TYPE_RAID: u8 = 0x02;
+/// 3.3.5a's group-type LFG-restricted bit, `SetLfgRestricted`'s argument (`0x6d8da2`).
+const GROUP_TYPE_LFG_RESTRICTED: u8 = 0x04;
 /// 3.3.5a's group-type LFG bit: an LFG list carries a status byte and the dungeon slot.
 const GROUP_TYPE_LFG: u8 = 0x08;
 /// 3.3.5a's member-flags assistant bit (`GetRaidRosterInfo` tests `& 1`).
@@ -124,19 +159,8 @@ fn fold_member_flags(subgroup: u8, flags: u8) -> u8 {
     (subgroup & 0x07) | assistant
 }
 
-/// Read `SMSG_GROUP_LIST` as `0x6d8870` does: the group type, 1 for a raid, our own flags
-/// ([`fold_member_flags`]) and role bits, the rows, the leader and the loot tail.
-#[allow(clippy::type_complexity)]
-pub(super) fn read_group_list(
-    r: &mut &[u8],
-) -> io::Result<(
-    u8,
-    u8,
-    u8,
-    Vec<GroupMemberEntry>,
-    u64,
-    Option<GroupLootInfo>,
-)> {
+/// Read `SMSG_GROUP_LIST` as `0x6d8870` does; `group_type` is 1 for a raid, flags [`fold_member_flags`].
+pub(super) fn read_group_list(r: &mut &[u8]) -> io::Result<GroupList> {
     let raw_type = read_u8(r)?;
     let own_subgroup = read_u8(r)?;
     let own_flags = fold_member_flags(own_subgroup, read_u8(r)?);
@@ -166,23 +190,34 @@ pub(super) fn read_group_list(
         });
     }
     let leader = read_u64_le(r)?;
-    let loot = if count > 0 {
+    let (loot, difficulties) = if count > 0 {
         let method = read_u8(r)?;
         let master = read_u64_le(r)?;
         let threshold = read_u8(r)?;
-        let _dungeon_difficulty = read_u8(r)?;
-        let _raid_difficulty = read_u8(r)?;
-        let _dynamic_difficulty = read_u8(r)?;
-        Some(GroupLootInfo {
+        let difficulties = GroupDifficulties {
+            dungeon: read_u8(r)?,
+            raid: read_u8(r)?,
+            dynamic: read_u8(r)?,
+        };
+        let loot = GroupLootInfo {
             method,
             master,
             threshold,
-        })
+        };
+        (Some(loot), Some(difficulties))
     } else {
-        None
+        (None, None)
     };
-    let group_type = u8::from(raw_type & GROUP_TYPE_RAID != 0);
-    Ok((group_type, own_flags, own_roles, members, leader, loot))
+    Ok(GroupList {
+        group_type: u8::from(raw_type & GROUP_TYPE_RAID != 0),
+        own_flags,
+        own_roles,
+        members,
+        leader,
+        loot,
+        difficulties,
+        lfg_restricted: raw_type & GROUP_TYPE_LFG_RESTRICTED != 0,
+    })
 }
 
 /// Read `SMSG_GROUP_INVITE` as `0x6df1a0` does: can-accept, inviter, `u32`, `u32` dungeon list, `u32`.

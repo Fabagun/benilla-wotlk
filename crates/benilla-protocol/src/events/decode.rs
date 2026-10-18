@@ -562,6 +562,8 @@ pub fn decode(packet: ServerPacket) -> Vec<SessionEvent> {
             members,
             leader,
             loot,
+            difficulties,
+            lfg_restricted,
         } => vec![SessionEvent::GroupList {
             group_type,
             own_flags,
@@ -569,6 +571,8 @@ pub fn decode(packet: ServerPacket) -> Vec<SessionEvent> {
             members,
             leader,
             loot,
+            difficulties,
+            lfg_restricted,
         }],
         ServerPacket::PartyCommandResult {
             operation,
@@ -633,6 +637,9 @@ pub fn decode(packet: ServerPacket) -> Vec<SessionEvent> {
             loser,
         }],
         ServerPacket::DuelCountdown { seconds } => vec![SessionEvent::DuelCountdown { seconds }],
+        ServerPacket::DungeonDifficulty(set) => vec![SessionEvent::DungeonDifficulty(set)],
+        ServerPacket::RaidDifficulty(set) => vec![SessionEvent::RaidDifficulty(set)],
+        ServerPacket::BreakTarget { guid } => vec![SessionEvent::BreakTarget { guid }],
         ServerPacket::InspectHonorStats(stats) => vec![SessionEvent::InspectHonorStats(stats)],
         ServerPacket::PvpCredit(credit) => vec![SessionEvent::PvpCredit(credit)],
         ServerPacket::MirrorTimerStart(start) => vec![SessionEvent::MirrorTimerStart(start)],
