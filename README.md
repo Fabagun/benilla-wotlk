@@ -14,8 +14,6 @@ The client connects to compatible 3.3.5a servers using the original network prot
 
 This project does not distribute Blizzard's original client code or game assets. Users must provide their own game data.
 
-Benilla-WotLK is an independent, community-driven preservation project, developed out of passion for the original game and the desire to keep its legacy playable for years to come.
-
 ## Status
 
 > [!IMPORTANT]
