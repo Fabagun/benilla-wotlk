@@ -702,16 +702,24 @@ fn dist_sq(q: Vec3, p: Vec3) -> f64 {
 }
 
 /// `PLAYER_CONTROL_LOST`/`GAINED` on a change of the flag `SMSG_CLIENT_CONTROL_UPDATE` writes
-/// (`0x4958e0`); the boot value, and a fresh VM's memo, is in control (`0x48f626`).
+/// (`OnClientControlChanged 0x520fe0`); the boot value, and a fresh VM's memo, is in control. A
+/// world entry sets the flag with no event (`InitClientControlState 0x513880`).
 fn feed_player_control(
     script: Option<NonSendMut<UiScript>>,
     player: Option<Res<crate::player::Player>>,
-    mut lost: Local<crate::ui_script::VmMemo<bool>>,
+    mut memo: Local<crate::ui_script::VmMemo<(bool, u32)>>,
 ) {
     let (Some(mut script), Some(player)) = (script, player) else {
         return;
     };
-    let lost = lost.get(&script);
+    let (lost, inits) = memo.get(&script);
+    if *inits != player.control_inits {
+        *inits = player.control_inits;
+        if !player.control_lost {
+            *lost = false;
+            script.set_player_control(true);
+        }
+    }
     if *lost != player.control_lost {
         *lost = player.control_lost;
         // `HasFullControl`'s flag rides the same edge.
@@ -1317,10 +1325,6 @@ fn feed_units(
         }
         feed.warned_sideless = sideless;
     }
-    let owner_of = |guid: u64| {
-        let e = *index.as_ref()?.0.get(&guid)?;
-        stores.all.get(e).ok().cloned()
-    };
     // What the three snapshots below (target, target-of-target, NPC) read besides a descriptor.
     let held = held::HeldUnits {
         names: &names,
@@ -1331,7 +1335,6 @@ fn feed_units(
         self_store: self_pair.map(|(s, _)| s),
         classes: chr,
         types,
-        owner_of: &owner_of,
     };
     let target = selection.target.zip(selection.guid).and_then(|(e, guid)| {
         let store = stores.all.get(e).ok()?;
@@ -2725,6 +2728,27 @@ mod tests {
             .resource_mut::<crate::player::Player>()
             .control_lost = false;
         assert_eq!(seen(&mut app), vec!["PLAYER_CONTROL_GAINED".to_string()]);
+
+        // A world entry hands control back with no event (`0x513880`), the flag re-seeded.
+        app.world_mut()
+            .resource_mut::<crate::player::Player>()
+            .control_lost = true;
+        assert_eq!(seen(&mut app), vec!["PLAYER_CONTROL_LOST".to_string()]);
+        {
+            let mut p = app.world_mut().resource_mut::<crate::player::Player>();
+            p.control_lost = false;
+            p.control_inits += 1;
+        }
+        assert_eq!(
+            seen(&mut app),
+            Vec::<String>::new(),
+            "no GAINED at a world entry"
+        );
+        assert!(app
+            .world_mut()
+            .non_send_resource_mut::<UiScript>()
+            .eval::<bool>("return HasFullControl() == 1")
+            .unwrap());
 
         let set_farsight = |app: &mut App, guid: u64| {
             app.world_mut().entity_mut(me).insert(ObjectStore(
