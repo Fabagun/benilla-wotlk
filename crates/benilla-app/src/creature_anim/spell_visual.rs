@@ -1288,6 +1288,40 @@ pub(super) fn arm_mount_poof_fx(
     }
 }
 
+/// The achievement earn effect, hardcoded index 0xb (`0x5b310b`, name at `0xa329a8`).
+const ACHIEVEMENT_EFFECT: &str = "HARDCODED Achievement Base";
+
+/// Whether `SMSG_ACHIEVEMENT_EARNED` plays the earn effect (`0x5b30c5`-`0x5b30d3`): not silent,
+/// a known row, and the row's flag `0x4` clear. Any player in view, not only ours.
+pub(super) fn earn_effect_plays(
+    db: Option<&benilla_ui::script::AchievementDb>,
+    achievement: u32,
+    silent: bool,
+) -> bool {
+    !silent
+        && db
+            .and_then(|d| d.get(achievement))
+            .is_some_and(|a| a.flags & 0x4 == 0)
+}
+
+/// The earn effect on `entity` (`0x5b30d5`-`0x5b311e`): a one-shot at `0x13` (`[0xa32b20]`),
+/// replacing an earlier one through the same-slot replace (`DestroyMatchingEffects` `0x6f8a60`).
+pub(crate) fn achievement_earn_fx(visuals: &SpellVisuals, entity: Entity) -> Option<SpellKitFx> {
+    let (effect, path) = visuals.0.hardcoded_effect(ACHIEVEMENT_EFFECT)?;
+    Some(SpellKitFx::Begin {
+        entity,
+        spell_id: 0,
+        persistent: false,
+        class: FxClass::Hold,
+        stage: FxStage::OneShot,
+        effects: vec![FxSlot {
+            tag: HARDCODED_FX_ATTACH,
+            effect,
+            path: path.to_string(),
+        }],
+    })
+}
+
 /// The pending-morph latch, the reference's `[unit+0xd54]`: armed by `0x5ff0c0` on every aura add
 /// and remove of an [`is_morph_spell`] spell; the display rebuild `0x60abe0` replays its impact kit
 /// (`0x60ad67`), the shapeshift cloud both ways. Shift-out works because the aura fields apply
